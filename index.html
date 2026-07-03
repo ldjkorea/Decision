@@ -895,6 +895,101 @@
     </div>
   </div>
 
+  <!-- Edit Issue Modal -->
+  <div class="modal-overlay" id="editIssueModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="font-weight: 700; font-size: 1.1rem; color: var(--gold-bright);">✏️ 안건 내용 수정</h3>
+        <button class="modal-close" onclick="closeModal('editIssueModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="editIssueForm" onsubmit="handleUpdateIssue(event)">
+          <input type="hidden" id="editIssueId">
+
+          <div class="form-group">
+            <label class="form-label">안건 제목 <span class="req">*</span></label>
+            <input type="text" id="editTitle" class="form-control" required>
+          </div>
+
+          <div class="grid-3col">
+            <div class="form-group">
+              <label class="form-label">카테고리 <span class="req">*</span></label>
+              <input type="text" id="editCategory" list="categoryDatalist" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">우선순위</label>
+              <select id="editPriority" class="form-control">
+                <option value="상">상 (긴급)</option>
+                <option value="중">중</option>
+                <option value="하">하</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">마감 기한</label>
+              <input type="text" id="editDeadline" class="form-control">
+            </div>
+          </div>
+
+          <div class="grid-3col">
+            <div class="form-group">
+              <label class="form-label">제안자 <span class="req">*</span></label>
+              <input type="text" id="editProposer" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">최종결정자 <span class="req">*</span></label>
+              <input type="text" id="editDecisionOwner" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">실행담당자</label>
+              <input type="text" id="editExecutor" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">예상 비용 / 소요 예산</label>
+            <input type="text" id="editEstimatedCost" class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">핵심 내용 <span class="req">*</span></label>
+            <textarea id="editSummary" class="form-control" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">예상 리스크 및 고려사항</label>
+            <textarea id="editRisk" class="form-control"></textarea>
+          </div>
+
+          <div class="detail-section">
+            <div class="detail-section-title">💡 검토 선택지 비교</div>
+            <div class="form-group">
+              <label class="form-label">선택지 A</label>
+              <input type="text" id="editOptionA" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">선택지 B</label>
+              <input type="text" id="editOptionB" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">선택지 C</label>
+              <input type="text" id="editOptionC" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">수정자 이름 <span class="req">*</span></label>
+            <input type="text" id="editActor" class="form-control" placeholder="수정을 진행하는 작성자 이름" required>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('editIssueModal')">취소</button>
+            <button type="submit" class="btn btn-primary">수정사항 저장</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- Issue Detail Modal -->
   <div class="modal-overlay" id="detailModal">
     <div class="modal-card">
@@ -1051,7 +1146,7 @@
 
       if (configuredGasUrl && configuredGasUrl.trim() !== "") {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1800); // 1.8초 타임아웃
+        const timeoutId = setTimeout(() => controller.abort(), 1800);
 
         fetch(configuredGasUrl, {
           method: "POST",
@@ -1059,15 +1154,14 @@
           body: JSON.stringify({ action: action, payload: params }),
           signal: controller.signal
         })
-        .then(res => res.text()) // 텍스트로 안전하게 수신
+        .then(res => res.text())
         .then(text => {
           clearTimeout(timeoutId);
           try {
-            let res = JSON.parse(text); // 안전 파싱
+            let res = JSON.parse(text);
             if (res.error) throw new Error(res.message);
             callback(res.data);
           } catch (parseErr) {
-            // Google의 HTML 에러 페이지가 오더라도 Unexpected Token 에러 전혀 없이 안심 로컬 전환
             let fallbackRes = mockBackend[action](params);
             callback(fallbackRes);
           }
@@ -1312,7 +1406,6 @@
               <option value="완료" ${issue.status === '완료' ? 'selected' : ''}>완료</option>
             </select>
             <button class="btn btn-primary" onclick="handleStatusChangeClick('${issue.id}', '${issue.status}')">상태 변경 반영</button>
-            <button class="btn btn-danger" style="margin-left: auto;" onclick="handleDeleteIssue('${issue.id}')">🗑️ 안건 삭제</button>
           </div>
         </div>
 
@@ -1399,9 +1492,86 @@
             `).join('') : '<div style="font-size: 0.8rem; color: var(--text-muted);">이력이 없습니다.</div>'}
           </div>
         </div>
+
+        <!-- Very Bottom Action Bar: Edit & Delete Buttons -->
+        <div class="detail-section" style="margin-top: 24px; border-color: rgba(234, 179, 8, 0.4); background: rgba(20, 26, 36, 0.9);">
+          <div class="detail-section-title" style="color: var(--gold-bright);">
+            ⚙️ 안건 관리 (수정 / 삭제)
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+            안건의 제목, 제안자, 마감기한 등 세부 내용을 수정하거나 안건을 완전히 삭제할 수 있습니다.
+          </div>
+          <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+            <button class="btn btn-secondary" style="border-color: var(--gold-border); color: var(--gold-bright);" onclick="openEditModal('${issue.id}')">
+              ✏️ 안건 내용 수정하기
+            </button>
+            <button class="btn btn-danger" onclick="handleDeleteIssue('${issue.id}')">
+              🗑️ 안건 삭제하기
+            </button>
+          </div>
+        </div>
       `;
 
       document.getElementById("detailModalBody").innerHTML = bodyHtml;
+    }
+
+    function openEditModal(issueId) {
+      const issue = currentIssues.find(i => i.id === issueId);
+      if (!issue) {
+        showToast("안건 정보를 찾을 수 없습니다.", "error");
+        return;
+      }
+
+      document.getElementById("editIssueId").value = issue.id;
+      document.getElementById("editTitle").value = issue.title || '';
+      document.getElementById("editCategory").value = issue.category || '';
+      document.getElementById("editPriority").value = issue.priority || '중';
+      document.getElementById("editDeadline").value = issue.deadline || '';
+      document.getElementById("editProposer").value = issue.proposer || '';
+      document.getElementById("editDecisionOwner").value = issue.decisionOwner || '';
+      document.getElementById("editExecutor").value = issue.executor || '';
+      document.getElementById("editEstimatedCost").value = issue.estimatedCost || '';
+      document.getElementById("editSummary").value = issue.summary || '';
+      document.getElementById("editRisk").value = issue.risk || '';
+      document.getElementById("editOptionA").value = issue.optionA || '';
+      document.getElementById("editOptionB").value = issue.optionB || '';
+      document.getElementById("editOptionC").value = issue.optionC || '';
+      document.getElementById("editActor").value = issue.decisionOwner || issue.proposer || '';
+
+      openModal("editIssueModal");
+    }
+
+    function handleUpdateIssue(e) {
+      e.preventDefault();
+      const issueId = document.getElementById("editIssueId").value;
+      const categoryVal = document.getElementById("editCategory").value;
+
+      const data = {
+        issueId: issueId,
+        title: document.getElementById("editTitle").value,
+        category: categoryVal,
+        priority: document.getElementById("editPriority").value,
+        deadline: document.getElementById("editDeadline").value,
+        proposer: document.getElementById("editProposer").value,
+        decisionOwner: document.getElementById("editDecisionOwner").value,
+        executor: document.getElementById("editExecutor").value,
+        estimatedCost: document.getElementById("editEstimatedCost").value,
+        summary: document.getElementById("editSummary").value,
+        risk: document.getElementById("editRisk").value,
+        optionA: document.getElementById("editOptionA").value,
+        optionB: document.getElementById("editOptionB").value,
+        optionC: document.getElementById("editOptionC").value,
+        actor: document.getElementById("editActor").value
+      };
+
+      registerNewCategory(categoryVal);
+
+      apiCall("updateIssue", data, res => {
+        showToast("안건 세부 내용이 성공적으로 수정되었습니다!", "success");
+        closeModal("editIssueModal");
+        loadDashboardAndIssues();
+        openDetailModal(issueId);
+      });
     }
 
     function handleCallVoteResolution(issueId) {
@@ -1531,7 +1701,7 @@
     }
 
     function handleDeleteIssue(issueId) {
-      const actor = document.getElementById("statusActor").value || "관리자";
+      const actor = (document.getElementById("statusActor") ? document.getElementById("statusActor").value : "") || "관리자";
       if (confirm("정말로 이 안건을 삭제하시겠습니까? (삭제 처리 후 목록에서 숨겨집니다)")) {
         apiCall("deleteIssue", { issueId: issueId, actor: actor }, res => {
           showToast("안건이 삭제 처리되었습니다.", "success");
@@ -1709,6 +1879,45 @@
 
         issues.unshift(newItem);
         logs.push({ id: 'LOG_' + Date.now(), issueId: newId, actor: data.proposer.trim(), fromStatus: '-', toStatus: '제안', reason: '최초 안건 작성', createdAt: now });
+
+        localStorage.setItem("DECISION_ISSUES", JSON.stringify(issues));
+        localStorage.setItem("DECISION_LOGS", JSON.stringify(logs));
+        return { success: true };
+      },
+
+      updateIssue: function(data) {
+        if (!data.issueId) throw new Error("안건 ID가 없습니다.");
+        let issues = JSON.parse(localStorage.getItem("DECISION_ISSUES") || "[]");
+        let logs = JSON.parse(localStorage.getItem("DECISION_LOGS") || "[]");
+
+        const idx = issues.findIndex(i => i.id === data.issueId);
+        if (idx === -1) throw new Error("수정할 안건이 없습니다.");
+
+        const now = new Date().toISOString();
+        issues[idx].title = data.title.trim();
+        issues[idx].category = data.category || '기타';
+        issues[idx].priority = data.priority || '중';
+        issues[idx].deadline = data.deadline || '';
+        issues[idx].proposer = data.proposer.trim();
+        issues[idx].decisionOwner = data.decisionOwner.trim();
+        issues[idx].executor = data.executor || '';
+        issues[idx].estimatedCost = data.estimatedCost || '';
+        issues[idx].summary = data.summary.trim();
+        issues[idx].risk = data.risk || '';
+        issues[idx].optionA = data.optionA || '';
+        issues[idx].optionB = data.optionB || '';
+        issues[idx].optionC = data.optionC || '';
+        issues[idx].updatedAt = now;
+
+        logs.push({
+          id: 'LOG_' + Date.now(),
+          issueId: data.issueId,
+          actor: data.actor || data.proposer.trim(),
+          fromStatus: issues[idx].status,
+          toStatus: issues[idx].status,
+          reason: '안건 상세 내용 수정',
+          createdAt: now
+        });
 
         localStorage.setItem("DECISION_ISSUES", JSON.stringify(issues));
         localStorage.setItem("DECISION_LOGS", JSON.stringify(logs));

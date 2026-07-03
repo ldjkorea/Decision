@@ -1,148 +1,169 @@
 /**
- * Decision (의사결정 플랫폼) - Google Apps Script Backend
+ * Decision Engine - Google Apps Script Backend
  */
 
 var CONFIG = {
-  SPREADSHEET_ID: "",
   SHEET_NAMES: {
-    ISSUES: "Issues",
-    COMMENTS: "Comments",
-    VOTES: "Votes",
-    LOGS: "Logs",
-    MEMBERS: "Members"
+    ISSUES: "ISSUES",
+    LOGS: "LOGS",
+    COMMENTS: "COMMENTS",
+    VOTES: "VOTES",
+    MEMBERS: "MEMBERS"
   }
 };
 
-function getDb() {
-  var ss = null;
-  var prop = PropertiesService.getScriptProperties();
-  var savedId = prop.getProperty("SPREADSHEET_ID");
-
-  if (CONFIG.SPREADSHEET_ID && CONFIG.SPREADSHEET_ID.trim() !== "") {
-    try { ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID.trim()); } catch (e) {}
-  }
-
-  if (!ss && savedId) {
-    try { ss = SpreadsheetApp.openById(savedId); } catch (e) {}
-  }
-
-  if (!ss) {
-    try { ss = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) {}
-  }
-
-  if (!ss) {
-    ss = SpreadsheetApp.create("Decision_DB");
-    prop.setProperty("SPREADSHEET_ID", ss.getId());
-  }
-
-  ensureSheetsAndHeaders(ss);
-  return ss;
-}
-
 function doGet(e) {
-  if (e && e.parameter && e.parameter.action) {
-    var action = e.parameter.action;
-    var result = handleApiRequest(action, e.parameter);
-    return ContentService.createTextOutput(JSON.stringify(result))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-
-  var template = HtmlService.createTemplateFromFile("index");
+  var template = HtmlService.createTemplateFromFile('Index');
   return template.evaluate()
-    .setTitle("Decision - 의사결정 플랫폼")
-    .addMetaTag("viewport", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
+    .setTitle('Decision - 의사결정 플랫폼')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 function doPost(e) {
-  var requestData = {};
   try {
-    if (e && e.postData && e.postData.contents) {
-      requestData = JSON.parse(e.postData.contents);
-    }
-  } catch (err) {
-    requestData = {};
-  }
+    var request = JSON.parse(e.postData.contents);
+    var action = request.action;
+    var payload = request.payload;
+    var result;
 
-  var action = requestData.action || (e && e.parameter ? e.parameter.action : "");
-  var payload = requestData.payload || requestData;
-
-  var result = handleApiRequest(action, payload);
-  return ContentService.createTextOutput(JSON.stringify(result))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function handleApiRequest(action, payload) {
-  try {
     switch (action) {
-      case 'getDashboardData':
-        return { success: true, data: getDashboardData() };
-      case 'getIssues':
-        return { success: true, data: getIssues(payload.filters || payload) };
-      case 'getIssueDetail':
-        return { success: true, data: getIssueDetail(payload.issueId || payload.id) };
-      case 'createIssue':
-        return { success: true, data: createIssue(payload) };
-      case 'addComment':
-        return { success: true, data: addComment(payload.issueId, payload.author, payload.text) };
-      case 'castVote':
-        return { success: true, data: castVote(payload.issueId, payload.voter, payload.value, payload.reason) };
-      case 'updateIssueStatus':
-        return { success: true, data: updateIssueStatus(payload.issueId, payload.actor, payload.toStatus, payload.holdReason, payload.reviewDate) };
-      case 'deleteIssue':
-        return { success: true, data: deleteIssue(payload.issueId, payload.actor) };
-      default:
-        throw new Error("알 수 없는 API action입니다: " + action);
+      case 'getDashboardData': result = getDashboardData(); break;
+      case 'getIssues': result = getIssues(payload); break;
+      case 'getIssueDetail': result = getIssueDetail(payload.issueId || payload); break;
+      case 'createIssue': result = createIssue(payload); break;
+      case 'updateIssue': result = updateIssue(payload); break;
+      case 'addComment': result = addComment(payload.issueId, payload.author, payload.text); break;
+      case 'castVote': result = castVote(payload.issueId, payload.voter, payload.value, payload.reason); break;
+      case 'updateIssueStatus': result = updateIssueStatus(payload.issueId, payload.actor, payload.toStatus, payload.holdReason, payload.reviewDate); break;
+      case 'deleteIssue': result = deleteIssue(payload.issueId, payload.actor); break;
+      default: throw new Error("지원하지 않는 요청 기능입니다: " + action);
     }
+
+    return ContentService.createTextOutput(JSON.stringify({ error: false, data: result }))
+      .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
-    return { error: true, message: err.message || String(err) };
+    return ContentService.createTextOutput(JSON.stringify({ error: true, message: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
-function ensureSheetsAndHeaders(ss) {
-  var schema = {
-    Issues: [
-      'id', 'title', 'category', 'proposer', 'decisionOwner', 'executor', 
-      'deadline', 'estimatedCost', 'summary', 'risk', 'optionA', 'optionB', 
-      'optionC', 'status', 'priority', 'holdReason', 'reviewDate', 'docUrl', 
-      'createdAt', 'updatedAt', 'deleted'
-    ],
-    Comments: ['id', 'issueId', 'author', 'text', 'createdAt'],
-    Votes: ['id', 'issueId', 'voter', 'value', 'reason', 'createdAt'],
-    Logs: ['id', 'issueId', 'actor', 'fromStatus', 'toStatus', 'reason', 'createdAt'],
-    Members: ['id', 'name', 'role', 'canApprove', 'createdAt']
-  };
+function getDb() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) throw new Error("Google Spreadsheet 연결 실패");
+  return ss;
+}
 
-  Object.keys(schema).forEach(function(sheetName) {
-    var sheet = ss.getSheetByName(sheetName);
-    if (!sheet) {
-      sheet = ss.insertSheet(sheetName);
+function updateIssue(data) {
+  if (!data.issueId) throw new Error("수정할 안건 ID가 없습니다.");
+  if (!data.title || data.title.trim() === '') throw new Error("제목은 필수 입력 사항입니다.");
+  if (!data.proposer || data.proposer.trim() === '') throw new Error("제안자는 필수 입력 사항입니다.");
+  if (!data.decisionOwner || data.decisionOwner.trim() === '') throw new Error("최종결정자는 필수 입력 사항입니다.");
+  if (!data.summary || data.summary.trim() === '') throw new Error("핵심내용은 필수 입력 사항입니다.");
+
+  var ss = getDb();
+  var sheet = ss.getSheetByName(CONFIG.SHEET_NAMES.ISSUES);
+  var values = sheet.getDataRange().getValues();
+  var headers = values[0];
+
+  var idIdx = headers.indexOf('id');
+  var titleIdx = headers.indexOf('title');
+  var categoryIdx = headers.indexOf('category');
+  var proposerIdx = headers.indexOf('proposer');
+  var decisionOwnerIdx = headers.indexOf('decisionOwner');
+  var executorIdx = headers.indexOf('executor');
+  var deadlineIdx = headers.indexOf('deadline');
+  var estimatedCostIdx = headers.indexOf('estimatedCost');
+  var summaryIdx = headers.indexOf('summary');
+  var riskIdx = headers.indexOf('risk');
+  var optionAIdx = headers.indexOf('optionA');
+  var optionBIdx = headers.indexOf('optionB');
+  var optionCIdx = headers.indexOf('optionC');
+  var priorityIdx = headers.indexOf('priority');
+  var updatedAtIdx = headers.indexOf('updatedAt');
+  var statusIdx = headers.indexOf('status');
+
+  for (var i = 1; i < values.length; i++) {
+    if (values[i][idIdx] === data.issueId) {
+      var rowNum = i + 1;
+      var now = new Date().toISOString();
+
+      sheet.getRange(rowNum, titleIdx + 1).setValue(data.title.trim());
+      sheet.getRange(rowNum, categoryIdx + 1).setValue(data.category || '기타');
+      sheet.getRange(rowNum, proposerIdx + 1).setValue(data.proposer.trim());
+      sheet.getRange(rowNum, decisionOwnerIdx + 1).setValue(data.decisionOwner.trim());
+      sheet.getRange(rowNum, executorIdx + 1).setValue(data.executor || '');
+      sheet.getRange(rowNum, deadlineIdx + 1).setValue(data.deadline || '');
+      sheet.getRange(rowNum, estimatedCostIdx + 1).setValue(data.estimatedCost || '');
+      sheet.getRange(rowNum, summaryIdx + 1).setValue(data.summary.trim());
+      sheet.getRange(rowNum, riskIdx + 1).setValue(data.risk || '');
+      sheet.getRange(rowNum, optionAIdx + 1).setValue(data.optionA || '');
+      sheet.getRange(rowNum, optionBIdx + 1).setValue(data.optionB || '');
+      sheet.getRange(rowNum, optionCIdx + 1).setValue(data.optionC || '');
+      sheet.getRange(rowNum, priorityIdx + 1).setValue(data.priority || '중');
+      sheet.getRange(rowNum, updatedAtIdx + 1).setValue(now);
+
+      addLog(ss, data.issueId, data.actor || data.proposer.trim(), values[i][statusIdx], values[i][statusIdx], "안건 상세 내용 수정");
+      return { success: true };
     }
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow(schema[sheetName]);
-      sheet.getRange(1, 1, 1, schema[sheetName].length).setFontWeight("bold").setBackground("#f3f4f6");
+  }
+
+  throw new Error("수정할 안건을 찾을 수 없습니다.");
+}
+
+function setupInitialDatabase() {
+  var ss = getDb();
+  var sheets = [
+    CONFIG.SHEET_NAMES.ISSUES,
+    CONFIG.SHEET_NAMES.LOGS,
+    CONFIG.SHEET_NAMES.COMMENTS,
+    CONFIG.SHEET_NAMES.VOTES,
+    CONFIG.SHEET_NAMES.MEMBERS
+  ];
+
+  sheets.forEach(function(name) {
+    if (!ss.getSheetByName(name)) {
+      ss.insertSheet(name);
     }
   });
 
   var issuesSheet = ss.getSheetByName(CONFIG.SHEET_NAMES.ISSUES);
-  if (issuesSheet.getLastRow() <= 1) {
-    seedInitialData(ss);
+  if (issuesSheet.getLastRow() === 0) {
+    issuesSheet.appendRow([
+      'id', 'title', 'category', 'proposer', 'decisionOwner', 'executor',
+      'deadline', 'estimatedCost', 'summary', 'risk', 'optionA', 'optionB', 'optionC',
+      'status', 'priority', 'holdReason', 'reviewDate', 'docUrl', 'createdAt', 'updatedAt', 'deleted'
+    ]);
   }
+
+  var logsSheet = ss.getSheetByName(CONFIG.SHEET_NAMES.LOGS);
+  if (logsSheet.getLastRow() === 0) {
+    logsSheet.appendRow(['id', 'issueId', 'actor', 'fromStatus', 'toStatus', 'reason', 'createdAt']);
+  }
+
+  var commentsSheet = ss.getSheetByName(CONFIG.SHEET_NAMES.COMMENTS);
+  if (commentsSheet.getLastRow() === 0) {
+    commentsSheet.appendRow(['id', 'issueId', 'author', 'text', 'createdAt']);
+  }
+
+  var votesSheet = ss.getSheetByName(CONFIG.SHEET_NAMES.VOTES);
+  if (votesSheet.getLastRow() === 0) {
+    votesSheet.appendRow(['id', 'issueId', 'voter', 'value', 'reason', 'createdAt']);
+  }
+
+  var membersSheet = ss.getSheetByName(CONFIG.SHEET_NAMES.MEMBERS);
+  if (membersSheet.getLastRow() === 0) {
+    membersSheet.appendRow(['id', 'name', 'role', 'email']);
+  }
+
+  seedSampleData(ss);
 }
 
-function seedInitialData(ss) {
-  var now = new Date().toISOString();
-  var membersSheet = ss.getSheetByName(CONFIG.SHEET_NAMES.MEMBERS);
-  if (membersSheet.getLastRow() <= 1) {
-    var initialMembers = [
-      ['MEM_1', '이몽룡', '최종결정권자', true, now],
-      ['MEM_2', '홍길동', '기획담당', false, now],
-      ['MEM_3', '성춘향', '운영담당', false, now]
-    ];
-    initialMembers.forEach(function(row) { membersSheet.appendRow(row); });
-  }
-
+function seedSampleData(ss) {
   var issuesSheet = ss.getSheetByName(CONFIG.SHEET_NAMES.ISSUES);
+  if (issuesSheet.getLastRow() > 1) return;
+
+  var now = new Date().toISOString();
   var initialIssues = [
     [
       'ISSUE_101', '신규 프로젝트 추진의 건', '기획', '홍길동', '이몽룡', '성춘향',
@@ -235,10 +256,8 @@ function getIssues(filters) {
     }
 
     if (filters.tab === 'progress') {
-      // 진행중 안건: 제안, 논의중, 승인대기, 보류, 실행중
       if (['제안', '논의중', '승인대기', '보류', '실행중'].indexOf(item.status) === -1) return false;
     } else if (filters.tab === 'finished') {
-      // 종료된 안건: 승인, 거절(부결), 완료
       if (['승인', '거절', '완료'].indexOf(item.status) === -1) return false;
     }
 
@@ -465,12 +484,10 @@ function getLogsData(ss, issueId) {
   if (values.length <= 1) return [];
   var headers = values[0], issueIdIdx = headers.indexOf('issueId'), results = [];
   for (var i = 1; i < values.length; i++) {
-    var row = values[i];
-    if (!issueId || row[issueIdIdx] === issueId) {
-      var obj = {};
-      headers.forEach(function(h, idx) { obj[h] = row[idx]; });
-      results.push(obj);
-    }
+    if (issueId && values[i][issueIdIdx] !== issueId) continue;
+    var obj = {};
+    headers.forEach(function(h, idx) { obj[h] = values[i][idx]; });
+    results.push(obj);
   }
   return results.reverse();
 }
@@ -490,7 +507,7 @@ function getMembersData(ss) {
 
 function addLog(ss, issueId, actor, fromStatus, toStatus, reason) {
   var sheet = ss.getSheetByName(CONFIG.SHEET_NAMES.LOGS);
-  var logId = "LOG_" + Date.now();
   var now = new Date().toISOString();
-  sheet.appendRow([logId, issueId, actor, fromStatus || '-', toStatus, reason || '', now]);
+  var logId = "LOG_" + Date.now();
+  sheet.appendRow([logId, issueId, actor, fromStatus, toStatus, reason || '', now]);
 }
