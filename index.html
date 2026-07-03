@@ -761,9 +761,12 @@
       </div>
     </main>
 
-    <!-- Recent Logs Section -->
+    <!-- Recent Logs Section with Delete All Option -->
     <section class="recent-logs-section">
-      <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 10px; color: var(--gold-bright);">📋 최근 의사결정 활동 이력 (Logs)</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+        <h3 style="font-size: 1rem; font-weight: 700; color: var(--gold-bright);">📋 최근 의사결정 활동 이력 (Logs)</h3>
+        <button class="btn btn-danger" style="padding: 4px 10px; font-size: 0.76rem; min-height: auto;" onclick="handleClearAllLogs()">🗑️ 이력 전체 삭제</button>
+      </div>
       <div id="recentLogsTimeline" class="timeline-list">
         <!-- Dynamic Logs -->
       </div>
@@ -1257,7 +1260,7 @@
     function renderRecentLogs(logs) {
       const container = document.getElementById("recentLogsTimeline");
       if (!logs || logs.length === 0) {
-        container.innerHTML = `<div style="color: var(--text-muted); font-size: 0.85rem;">기록된 로그가 없습니다.</div>`;
+        container.innerHTML = `<div style="color: var(--text-muted); font-size: 0.85rem;">기록된 이력이 없습니다.</div>`;
         return;
       }
 
@@ -1265,13 +1268,36 @@
         <div class="timeline-item">
           <div class="timeline-meta">
             <span class="timeline-author">👤 ${escapeHtml(l.actor)}</span>
-            <span>${l.createdAt ? l.createdAt.split('T')[0] : ''}</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span>${l.createdAt ? l.createdAt.split('T')[0] : ''}</span>
+              <button onclick="handleDeleteSingleLog('${l.id}')" style="background:none; border:none; color: #fb7185; cursor:pointer; font-size: 0.85rem; font-weight: bold; padding: 0 4px;" title="개별 이력 삭제">&times;</button>
+            </div>
           </div>
           <div style="font-size: 0.85rem; color: var(--silver-text);">
             <strong style="color: var(--status-green);">${l.fromStatus} → ${l.toStatus === '거절' ? '부결' : l.toStatus}</strong> : ${escapeHtml(l.reason || '')}
           </div>
         </div>
       `).join('');
+    }
+
+    function handleDeleteSingleLog(logId) {
+      if (confirm("이 활동 이력 항목을 삭제하시겠습니까?")) {
+        apiCall("deleteLog", { logId: logId }, res => {
+          showToast("해당 이력이 삭제되었습니다.", "success");
+          loadDashboardAndIssues();
+          if (activeDetailId) openDetailModal(activeDetailId);
+        });
+      }
+    }
+
+    function handleClearAllLogs() {
+      if (confirm("정말로 모든 활동 이력(Logs)을 전체 삭제하시겠습니까?")) {
+        apiCall("clearLogs", null, res => {
+          showToast("모든 활동 이력이 초기화 삭제되었습니다.", "success");
+          loadDashboardAndIssues();
+          if (activeDetailId) openDetailModal(activeDetailId);
+        });
+      }
     }
 
     function openDetailModal(issueId) {
@@ -1351,7 +1377,7 @@
             <div><strong>최종결정자:</strong> ${escapeHtml(issue.decisionOwner)}</div>
             <div><strong>실행담당자:</strong> ${escapeHtml(issue.executor || '미정')}</div>
             <div><strong>마감기한:</strong> ${escapeHtml(issue.deadline || '없음')}</div>
-            <div><strong>예상비용:</strong> ${escapeHtml(issue.estimatedCost || '미정')}</div>
+            <div><strong>예상비용:</strong> ${escapeHtml(issue.estimatedCost || '비용미정')}</div>
           </div>
 
           <div style="margin-top: 12px;">
@@ -1484,8 +1510,11 @@
             ${(logs && logs.length > 0) ? logs.map(l => `
               <div class="timeline-item" style="font-size: 0.8rem;">
                 <div class="timeline-meta">
-                  <span>${escapeHtml(l.actor)}</span>
-                  <span>${l.createdAt}</span>
+                  <span>👤 ${escapeHtml(l.actor)}</span>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span>${l.createdAt}</span>
+                    <button onclick="handleDeleteSingleLog('${l.id}')" style="background:none; border:none; color: #fb7185; cursor:pointer; font-size: 0.85rem; font-weight: bold; padding: 0 4px;" title="개별 이력 삭제">&times;</button>
+                  </div>
                 </div>
                 <div><strong>${l.fromStatus} → ${l.toStatus === '거절' ? '부결' : l.toStatus}</strong> : ${escapeHtml(l.reason || '')}</div>
               </div>
@@ -1996,6 +2025,19 @@
           localStorage.setItem("DECISION_ISSUES", JSON.stringify(issues));
           localStorage.setItem("DECISION_LOGS", JSON.stringify(logs));
         }
+        return { success: true };
+      },
+
+      deleteLog: function(params) {
+        const logId = params.logId || params;
+        let logs = JSON.parse(localStorage.getItem("DECISION_LOGS") || "[]");
+        logs = logs.filter(l => l.id !== logId);
+        localStorage.setItem("DECISION_LOGS", JSON.stringify(logs));
+        return { success: true };
+      },
+
+      clearLogs: function() {
+        localStorage.setItem("DECISION_LOGS", JSON.stringify([]));
         return { success: true };
       }
     };

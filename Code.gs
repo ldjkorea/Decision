@@ -37,6 +37,8 @@ function doPost(e) {
       case 'castVote': result = castVote(payload.issueId, payload.voter, payload.value, payload.reason); break;
       case 'updateIssueStatus': result = updateIssueStatus(payload.issueId, payload.actor, payload.toStatus, payload.holdReason, payload.reviewDate); break;
       case 'deleteIssue': result = deleteIssue(payload.issueId, payload.actor); break;
+      case 'deleteLog': result = deleteLog(payload.logId || payload); break;
+      case 'clearLogs': result = clearLogs(); break;
       default: throw new Error("지원하지 않는 요청 기능입니다: " + action);
     }
 
@@ -52,6 +54,32 @@ function getDb() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   if (!ss) throw new Error("Google Spreadsheet 연결 실패");
   return ss;
+}
+
+function deleteLog(logId) {
+  var ss = getDb();
+  var sheet = ss.getSheetByName(CONFIG.SHEET_NAMES.LOGS);
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var idIdx = headers.indexOf('id');
+
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][idIdx] === logId) {
+      sheet.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  return { success: true };
+}
+
+function clearLogs() {
+  var ss = getDb();
+  var sheet = ss.getSheetByName(CONFIG.SHEET_NAMES.LOGS);
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clearContent();
+  }
+  return { success: true };
 }
 
 function updateIssue(data) {
