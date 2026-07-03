@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Decision - 의사결정 플랫폼</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-primary: #0b0f17;
+      --bg-surface: #141a24;
+      --bg-card: #1f2736;
+      --bg-glass: rgba(20, 26, 36, 0.85);
+      
+      --silver-hairline: rgba(226, 232, 240, 0.18);
+      --silver-border: rgba(148, 163, 184, 0.35);
+      --silver-glow: rgba(203, 213, 225, 0.12);
+      --silver-text: #e2e8f0;
+      --text-sub: #cbd5e1;
+      --text-muted: #8e9bb0;
+
+      --gold-gradient: linear-gradient(135deg, #fef08a 0%, #eab308 50%, #ca8a04 100%);
+      --gold-surface: rgba(234, 179, 8, 0.12);
+      --gold-border: rgba(234, 179, 8, 0.4);
+      --gold-text: #fef08a;
+      --gold-bright: #fde047;
+
+      --status-green: #34d399;
+      --status-amber: #fbbf24;
+      --status-rose: #fb7185;
+      --status-sky: #38bdf8;
+
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --shadow-metallic: 0 10px 30px -5px rgba(0, 0, 0, 0.7), 0 0 15px rgba(226, 232, 240, 0.05);
+      --shadow-gold: 0 4px 20px rgba(234, 179, 8, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Noto Sans KR', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--silver-text);
+      min-height: 100vh;
+      line-height: 1.5;
+      padding-bottom: 60px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    header {
+      background: var(--bg-glass);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--silver-hairline);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 14px 0;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--gold-gradient);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: var(--shadow-gold);
+    }
+
+    .brand-title h1 {
+      font-family: 'Cinzel', 'Noto Sans KR', serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .mode-badge {
+      font-size: 0.75rem;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: rgba(226, 232, 240, 0.08);
+      color: var(--silver-text);
+      border: 1px solid var(--silver-border);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mode-badge:hover {
+      background: rgba(226, 232, 240, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .dashboard-section {
+      margin: 20px 0 28px 0;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+    }
+
+    .metric-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--silver-border);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(234, 179, 8, 0.5);
+      box-shadow: var(--shadow-metallic);
+    }
+
+    .metric-title {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .metric-value {
+      font-size: 1.7rem;
+      font-weight: 800;
+      margin-top: 6px;
+    }
+
+    .metric-card.total .metric-value { color: #e2e8f0; }
+    .metric-card.pending .metric-value { color: var(--gold-bright); }
+    .metric-card.hold .metric-value { color: #fb923c; }
+    .metric-card.urgent .metric-value { color: #fb7185; }
+    .metric-card.imminent .metric-value { color: #38bdf8; }
+
+    /* Main Tab Navigation */
+    .tab-nav {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .tab-btn {
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 700;
+      background: var(--bg-surface);
+      color: var(--text-muted);
+      border: 1px solid var(--silver-border);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tab-btn.active {
+      background: var(--gold-surface);
+      color: var(--gold-bright);
+      border-color: var(--gold-border);
+      box-shadow: var(--shadow-gold);
+    }
+
+    .controls-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--silver-border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    @media (max-width: 860px) {
+      .controls-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .controls-grid .btn-new {
+        grid-column: span 2;
+      }
+    }
+
+    .form-control {
+      background: var(--bg-primary);
+      border: 1px solid var(--silver-border);
+      border-radius: var(--radius-sm);
+      color: var(--silver-text);
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-control:focus {
+      border-color: #eab308;
+      box-shadow: 0 0 10px rgba(234, 179, 8, 0.2);
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 0.88rem;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      min-height: 42px;
+    }
+
+    .btn-primary {
+      background: var(--gold-gradient);
+      color: #0b0f17;
+      font-weight: 700;
+      box-shadow: var(--shadow-gold);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--silver-text);
+      border: 1px solid var(--silver-border);
+    }
+
+    .btn-secondary:hover {
+      background: #2d3748;
+      border-color: #cbd5e1;
+    }
+
+    .btn-vote-call {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+    }
+
+    .btn-vote-call:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-docs {
+      background: linear-gradient(135deg, #38bdf8, #0284c7);
+      color: white;
+      box-shadow: 0 4px 14px rgba(14, 165, 233, 0.3);
+    }
+
+    .btn-docs:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-danger {
+      background: rgba(244, 63, 94, 0.15);
+      color: #fb7185;
+      border: 1px solid rgba(244, 63, 94, 0.35);
+    }
+
+    .btn-danger:hover {
+      background: rgba(244, 63, 94, 0.3);
+    }
+
+    .issues-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .issues-count {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .issues-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 480px) {
+      .issues-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .issue-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--silver-border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.22s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .issue-card:hover {
+      border-color: #eab308;
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-metallic);
+    }
+
+    .issue-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      display: inline-block;
+    }
+
+    .badge-제안 { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+    .badge-논의중 { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+    .badge-승인대기 { background: var(--gold-surface); color: var(--gold-bright); border: 1px solid var(--gold-border); }
+    .badge-승인 { background: rgba(52, 211, 153, 0.2); color: #34d399; }
+    .badge-거절 { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+    .badge-보류 { background: rgba(251, 146, 60, 0.2); color: #fb923c; }
+    .badge-실행중 { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+    .badge-완료 { background: rgba(16, 185, 129, 0.25); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.4); }
+
+    .priority-badge {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .priority-상 { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+    .priority-중 { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .priority-하 { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+
+    .issue-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--silver-text);
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .issue-summary-preview {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      margin-bottom: 14px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .issue-meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      padding-top: 10px;
+      border-top: 1px solid var(--silver-hairline);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 1000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 12px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--silver-border);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 800px;
+      max-height: 92vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-metallic);
+      animation: modalFade 0.22s ease-out;
+    }
+
+    @keyframes modalFade {
+      from { opacity: 0; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--silver-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background: var(--bg-surface);
+      z-index: 10;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .modal-close:hover {
+      background: var(--bg-card);
+      color: white;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+    }
+
+    .form-label .req {
+      color: var(--status-rose);
+      margin-left: 3px;
+    }
+
+    .preset-tags {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--bg-card);
+      color: var(--text-sub);
+      border: 1px solid var(--silver-border);
+      cursor: pointer;
+    }
+
+    .preset-btn:hover {
+      background: var(--silver-border);
+      color: white;
+    }
+
+    .detail-section {
+      background: var(--bg-primary);
+      border: 1px solid var(--silver-border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .detail-section-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--gold-bright);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    .option-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--silver-border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+    }
+
+    .option-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--status-sky);
+      margin-bottom: 4px;
+    }
+
+    .votes-summary {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .vote-pill {
+      flex: 1;
+      background: var(--bg-surface);
+      border: 1px solid var(--silver-border);
+      border-radius: var(--radius-sm);
+      padding: 8px;
+      text-align: center;
+    }
+
+    .vote-pill .count {
+      font-size: 1.2rem;
+      font-weight: 800;
+    }
+
+    .timeline-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .timeline-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--silver-border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+    }
+
+    .timeline-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .recent-logs-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--silver-border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      margin-top: 28px;
+    }
+
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      left: 20px;
+      max-width: 400px;
+      margin-left: auto;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      background: var(--bg-surface);
+      border-left: 4px solid var(--gold-bright);
+      box-shadow: var(--shadow-metallic);
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      color: white;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toastIn 0.3s ease;
+    }
+
+    .toast.error { border-left-color: var(--status-rose); }
+    .toast.success { border-left-color: var(--status-green); }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container header-content">
+      <div class="brand">
+        <div class="brand-icon">🏛️</div>
+        <div class="brand-title">
+          <h1>DECISION</h1>
+        </div>
+      </div>
+      <div>
+        <span id="appModeBadge" class="mode-badge" onclick="openModal('settingsModal')">⚙️ 구글시트 연동 설정</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <!-- Dashboard Summary -->
+    <section class="dashboard-section">
+      <div class="dashboard-grid">
+        <div class="metric-card total">
+          <div class="metric-title">전체 안건</div>
+          <div class="metric-value" id="statTotal">0</div>
+        </div>
+        <div class="metric-card pending">
+          <div class="metric-title">승인대기</div>
+          <div class="metric-value" id="statPending">0</div>
+        </div>
+        <div class="metric-card hold">
+          <div class="metric-title">보류 안건</div>
+          <div class="metric-value" id="statHold">0</div>
+        </div>
+        <div class="metric-card urgent">
+          <div class="metric-title">긴급 안건</div>
+          <div class="metric-value" id="statUrgent">0</div>
+        </div>
+        <div class="metric-card imminent">
+          <div class="metric-title">마감 임박</div>
+          <div class="metric-value" id="statImminent">0</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab Navigation Bar -->
+    <div class="tab-nav">
+      <button class="tab-btn active" id="tabAllBtn" onclick="switchMainTab('all')">
+        📋 전체 / 최근 안건
+      </button>
+      <button class="tab-btn" id="tabApprovedBtn" onclick="switchMainTab('approved')">
+        🏆 결재 통과 안건 (승인/완료)
+      </button>
+    </div>
+
+    <!-- Toolbar: Search, Filters, New Issue Button -->
+    <section class="controls-card">
+      <div class="controls-grid">
+        <div>
+          <input type="text" id="filterSearch" class="form-control" placeholder="🔍 제목, 제안자, 내용 검색..." oninput="onFilterChange()">
+        </div>
+        <div>
+          <select id="filterStatus" class="form-control" onchange="onFilterChange()">
+            <option value="전체">상태: 전체</option>
+            <option value="제안">제안</option>
+            <option value="논의중">논의중</option>
+            <option value="승인대기">승인대기</option>
+            <option value="승인">승인</option>
+            <option value="거절">거절</option>
+            <option value="보류">보류</option>
+            <option value="실행중">실행중</option>
+            <option value="완료">완료</option>
+          </select>
+        </div>
+        <div>
+          <select id="filterCategory" class="form-control" onchange="onFilterChange()">
+            <option value="전체">카테고리: 전체</option>
+          </select>
+        </div>
+        <div>
+          <select id="filterPriority" class="form-control" onchange="onFilterChange()">
+            <option value="전체">우선순위: 전체</option>
+            <option value="상">상 (긴급)</option>
+            <option value="중">중</option>
+            <option value="하">하</option>
+          </select>
+        </div>
+        <div>
+          <button class="btn btn-primary btn-new" onclick="openNewIssueModal()">+ 새 안건 등록</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Agendas List Section -->
+    <main>
+      <div class="issues-header">
+        <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--silver-text);" id="sectionHeadingTitle">의사결정 안건 목록</h2>
+        <span class="issues-count" id="issuesCount">총 0개 항목</span>
+      </div>
+
+      <div class="issues-grid" id="issuesContainer">
+        <!-- Dynamic Cards -->
+      </div>
+    </main>
+
+    <!-- Recent Logs Section -->
+    <section class="recent-logs-section">
+      <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 10px; color: var(--gold-bright);">📋 최근 의사결정 활동 이력 (Logs)</h3>
+      <div id="recentLogsTimeline" class="timeline-list">
+        <!-- Dynamic Logs -->
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-card" style="max-width: 550px;">
+      <div class="modal-header">
+        <h3 style="font-weight: 700; font-size: 1.05rem;">⚙️ Google Sheets 연동 설정</h3>
+        <button class="modal-close" onclick="closeModal('settingsModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 12px;">
+          Google Apps Script 배포 시 생성된 **웹 앱 URL**을 입력하면 Google Sheets 및 Docs와 실시간 연동됩니다.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Apps Script Web App URL</label>
+          <input type="url" id="gasUrlInput" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 14px;">
+          * URL이 없거나 비워둘 경우 단말기 내부 저장소(LocalStorage) 모드로 동작합니다.
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button class="btn btn-secondary" onclick="closeModal('settingsModal')">닫기</button>
+          <button class="btn btn-primary" onclick="saveGasSettings()">설정 저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Issue Modal -->
+  <div class="modal-overlay" id="newIssueModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="font-weight: 700; font-size: 1.1rem;">➕ 새 안건 등록</h3>
+        <button class="modal-close" onclick="closeModal('newIssueModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="newIssueForm" onsubmit="handleCreateIssue(event)">
+          
+          <div class="form-group">
+            <label class="form-label">안건 제목 <span class="req">*</span></label>
+            <input type="text" id="newTitle" class="form-control" placeholder="예: 신규 프로젝트 추진의 건" required>
+          </div>
+
+          <div class="grid-3col">
+            <div class="form-group">
+              <label class="form-label">카테고리 (자유 입력 가능) <span class="req">*</span></label>
+              <input type="text" id="newCategory" list="categoryDatalist" class="form-control" placeholder="직접 입력 또는 선택" required>
+              <datalist id="categoryDatalist">
+              </datalist>
+            </div>
+            <div class="form-group">
+              <label class="form-label">우선순위</label>
+              <select id="newPriority" class="form-control">
+                <option value="상">상 (긴급)</option>
+                <option value="중" selected>중</option>
+                <option value="하">하</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">마감 기한</label>
+              <input type="text" id="newDeadline" class="form-control" placeholder="예: 7월 15일">
+              <div class="preset-tags">
+                <span class="preset-btn" onclick="setDatePreset('7일 뒤')">7일 뒤</span>
+                <span class="preset-btn" onclick="setDatePreset('14일 뒤')">14일 뒤</span>
+                <span class="preset-btn" onclick="setDatePreset('말일까지')">이달 말</span>
+                <span class="preset-btn" onclick="setDatePreset('상시')">상시</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-3col">
+            <div class="form-group">
+              <label class="form-label">제안자 <span class="req">*</span></label>
+              <input type="text" id="newProposer" class="form-control" placeholder="예: 홍길동" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">최종결정자 <span class="req">*</span></label>
+              <input type="text" id="newDecisionOwner" class="form-control" placeholder="예: 이몽룡" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">실행담당자</label>
+              <input type="text" id="newExecutor" class="form-control" placeholder="예: 성춘향">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">예상 비용 / 소요 예산</label>
+            <input type="text" id="newEstimatedCost" class="form-control" placeholder="예: 500만원 또는 예산 소요 없음">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">핵심 내용 <span class="req">*</span></label>
+            <textarea id="newSummary" class="form-control" placeholder="안건의 필요성 및 핵심 제안 배경을 입력하세요..." required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">예상 리스크 및 고려사항</label>
+            <textarea id="newRisk" class="form-control" placeholder="발생 가능한 리스크 또는 주의사항을 작성하세요..."></textarea>
+          </div>
+
+          <div class="detail-section">
+            <div class="detail-section-title">💡 검토 선택지 비교 (선택사항)</div>
+            <div class="form-group">
+              <label class="form-label">선택지 A</label>
+              <input type="text" id="newOptionA" class="form-control" placeholder="예: A안 추진 (비용 500만원)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">선택지 B</label>
+              <input type="text" id="newOptionB" class="form-control" placeholder="예: B안 추진 (자체 진행)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">선택지 C</label>
+              <input type="text" id="newOptionC" class="form-control" placeholder="예: 현 상태 유지 후 재검토">
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('newIssueModal')">취소</button>
+            <button type="submit" class="btn btn-primary">등록하기</button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issue Detail Modal -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span id="detailStatusBadge" class="badge">상태</span>
+          <span id="detailPriorityBadge" class="priority-badge">우선순위</span>
+          <h3 id="detailTitle" style="font-weight: 700; font-size: 1.05rem; color: var(--silver-text);">-</h3>
+        </div>
+        <button class="modal-close" onclick="closeModal('detailModal')">&times;</button>
+      </div>
+      
+      <div class="modal-body" id="detailModalBody">
+        <!-- Dynamically Rendered -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Hold Reason Modal -->
+  <div class="modal-overlay" id="holdModal">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 style="font-weight: 700; color: #fb923c; font-size: 1.05rem;">⏸️ 안건 보류 처리</h3>
+        <button class="modal-close" onclick="closeModal('holdModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 14px;">
+          안건을 보류 상태로 변경하려면 **보류 사유**와 **재검토 예정일**을 입력해야 합니다.
+        </p>
+        <div class="form-group">
+          <label class="form-label">보류 사유 <span class="req">*</span></label>
+          <textarea id="holdModalReason" class="form-control" placeholder="예: 추가 정보 수집 및 환경 변화 주시 필요"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">재검토 예정일 <span class="req">*</span></label>
+          <input type="text" id="holdModalReviewDate" class="form-control" placeholder="예: 8월 1일">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+          <button class="btn btn-secondary" onclick="closeModal('holdModal')">취소</button>
+          <button class="btn btn-primary" onclick="confirmHoldStatusChange()">보류 처리 저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Client JavaScript -->
+  <script>
+    let currentIssues = [];
+    let activeDetailId = null;
+    let currentTab = 'all'; // 'all' or 'approved'
+    let isGasEnv = (typeof google !== 'undefined' && google.script && google.script.run);
+    let configuredGasUrl = localStorage.getItem("DECISION_GAS_URL") || "";
+    let knownCategories = JSON.parse(localStorage.getItem("DECISION_CATEGORIES") || '["기획", "개발", "마케팅", "재무", "기타"]');
+
+    document.addEventListener("DOMContentLoaded", function() {
+      updateModeBadge();
+      initLocalStorageMock();
+      updateCategoryDropdowns();
+      loadDashboardAndIssues();
+    });
+
+    function switchMainTab(tabName) {
+      currentTab = tabName;
+      document.getElementById("tabAllBtn").className = tabName === 'all' ? 'tab-btn active' : 'tab-btn';
+      document.getElementById("tabApprovedBtn").className = tabName === 'approved' ? 'tab-btn active' : 'tab-btn';
+
+      document.getElementById("sectionHeadingTitle").textContent = 
+        tabName === 'approved' ? '🏆 결재 통과 안건 목록 (승인 / 완료)' : '의사결정 안건 목록';
+
+      onFilterChange();
+    }
+
+    function updateModeBadge() {
+      const badge = document.getElementById("appModeBadge");
+      document.getElementById("gasUrlInput").value = configuredGasUrl;
+
+      if (isGasEnv) {
+        badge.textContent = "⚡ Apps Script 서버 연동중";
+        badge.style.background = "rgba(52, 211, 153, 0.15)";
+        badge.style.color = "#34d399";
+      } else if (configuredGasUrl && configuredGasUrl.trim() !== "") {
+        badge.textContent = "🌐 Google Sheets 연동중";
+        badge.style.background = "var(--gold-surface)";
+        badge.style.color = "var(--gold-bright)";
+      } else {
+        badge.textContent = "💻 단말기 로컬 저장소 모드 (⚙️ 연동)";
+        badge.style.background = "rgba(56, 189, 248, 0.12)";
+        badge.style.color = "#38bdf8";
+      }
+    }
+
+    function updateCategoryDropdowns() {
+      const filterSelect = document.getElementById("filterCategory");
+      const datalist = document.getElementById("categoryDatalist");
+
+      const currFilterVal = filterSelect.value;
+      filterSelect.innerHTML = `<option value="전체">카테고리: 전체</option>` + 
+        knownCategories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      filterSelect.value = currFilterVal || "전체";
+
+      datalist.innerHTML = knownCategories.map(c => `<option value="${escapeHtml(c)}">`).join('');
+    }
+
+    function registerNewCategory(catName) {
+      if (!catName || catName.trim() === '') return;
+      catName = catName.trim();
+      if (!knownCategories.includes(catName)) {
+        knownCategories.push(catName);
+        localStorage.setItem("DECISION_CATEGORIES", JSON.stringify(knownCategories));
+        updateCategoryDropdowns();
+      }
+    }
+
+    function setDatePreset(type) {
+      const field = document.getElementById("newDeadline");
+      const today = new Date();
+      if (type === '7일 뒤') {
+        const target = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        field.value = `${target.getMonth() + 1}월 ${target.getDate()}일`;
+      } else if (type === '14일 뒤') {
+        const target = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+        field.value = `${target.getMonth() + 1}월 ${target.getDate()}일`;
+      } else if (type === '말일까지') {
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        field.value = `${lastDay.getMonth() + 1}월 ${lastDay.getDate()}일`;
+      } else if (type === '상시') {
+        field.value = '상시';
+      }
+    }
+
+    function saveGasSettings() {
+      const inputVal = document.getElementById("gasUrlInput").value.trim();
+      configuredGasUrl = inputVal;
+      localStorage.setItem("DECISION_GAS_URL", inputVal);
+      updateModeBadge();
+      closeModal("settingsModal");
+      showToast(inputVal ? "Google Sheets 연동 URL이 저장되었습니다!" : "로컬 모드로 전환되었습니다.", "success");
+      loadDashboardAndIssues();
+    }
+
+    function apiCall(action, params, callback, errorCallback) {
+      if (isGasEnv) {
+        let runner = google.script.run
+          .withSuccessHandler(callback)
+          .withFailureHandler(err => {
+            showToast(err.message || err, "error");
+            if (errorCallback) errorCallback(err);
+          });
+        runner[action](params);
+        return;
+      }
+
+      if (configuredGasUrl && configuredGasUrl.trim() !== "") {
+        fetch(configuredGasUrl, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: action, payload: params })
+        })
+        .then(res => res.json())
+        .then(res => {
+          if (res.error) throw new Error(res.message);
+          callback(res.data);
+        })
+        .catch(err => {
+          showToast("구글 시트 연동 오류: " + err.message, "error");
+          if (errorCallback) errorCallback(err);
+        });
+        return;
+      }
+
+      setTimeout(() => {
+        try {
+          let res = mockBackend[action](params);
+          callback(res);
+        } catch (e) {
+          showToast(e.message, "error");
+          if (errorCallback) errorCallback(e);
+        }
+      }, 80);
+    }
+
+    function loadDashboardAndIssues() {
+      apiCall("getDashboardData", null, data => {
+        document.getElementById("statTotal").textContent = data.summary.total;
+        document.getElementById("statPending").textContent = data.summary.pendingApproval;
+        document.getElementById("statHold").textContent = data.summary.onHold;
+        document.getElementById("statUrgent").textContent = data.summary.urgent;
+        document.getElementById("statImminent").textContent = data.summary.deadlineImminent;
+
+        renderRecentLogs(data.recentLogs);
+      });
+
+      onFilterChange();
+    }
+
+    function onFilterChange() {
+      const filters = {
+        tab: currentTab,
+        search: document.getElementById("filterSearch").value,
+        status: document.getElementById("filterStatus").value,
+        category: document.getElementById("filterCategory").value,
+        priority: document.getElementById("filterPriority").value
+      };
+
+      apiCall("getIssues", filters, issues => {
+        currentIssues = issues;
+        issues.forEach(i => { if (i.category) registerNewCategory(i.category); });
+        renderIssuesGrid(issues);
+      });
+    }
+
+    function renderIssuesGrid(issues) {
+      const container = document.getElementById("issuesContainer");
+      document.getElementById("issuesCount").textContent = `총 ${issues.length}개 항목`;
+
+      if (!issues || issues.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted); background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--silver-border);">
+            ${currentTab === 'approved' ? '통과/결재 완료된 안건이 아직 없습니다.' : '조건에 해당하는 의사결정 안건이 없습니다.'}
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = issues.map(item => `
+        <div class="issue-card" onclick="openDetailModal('${item.id}')">
+          <div>
+            <div class="issue-top">
+              <span class="badge badge-${item.status}">${item.status}</span>
+              <span class="priority-badge priority-${item.priority}">우선순위: ${item.priority}</span>
+            </div>
+            <div class="issue-title">${escapeHtml(item.title)}</div>
+            <div class="issue-summary-preview">${escapeHtml(item.summary)}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.78rem; color: var(--gold-bright); margin-bottom: 8px; font-weight: 600;">
+              📂 ${escapeHtml(item.category)} | 👤 제안자: ${escapeHtml(item.proposer)} → 👑 결정자: ${escapeHtml(item.decisionOwner)}
+            </div>
+            <div class="issue-meta-row">
+              <span>📅 마감: ${escapeHtml(item.deadline || '상시')}</span>
+              <span>💰 ${escapeHtml(item.estimatedCost || '비용미정')}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderRecentLogs(logs) {
+      const container = document.getElementById("recentLogsTimeline");
+      if (!logs || logs.length === 0) {
+        container.innerHTML = `<div style="color: var(--text-muted); font-size: 0.85rem;">기록된 로그가 없습니다.</div>`;
+        return;
+      }
+
+      container.innerHTML = logs.map(l => `
+        <div class="timeline-item">
+          <div class="timeline-meta">
+            <span class="timeline-author">👤 ${escapeHtml(l.actor)}</span>
+            <span>${l.createdAt ? l.createdAt.split('T')[0] : ''}</span>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--silver-text);">
+            <strong style="color: var(--status-green);">${l.fromStatus} → ${l.toStatus}</strong> : ${escapeHtml(l.reason || '')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openDetailModal(issueId) {
+      activeDetailId = issueId;
+      apiCall("getIssueDetail", { issueId: issueId }, data => {
+        const issue = data.issue;
+        const comments = data.comments;
+        const votes = data.votes;
+        const logs = data.logs;
+
+        document.getElementById("detailTitle").textContent = issue.title;
+        
+        const statusBadge = document.getElementById("detailStatusBadge");
+        statusBadge.textContent = issue.status;
+        statusBadge.className = `badge badge-${issue.status}`;
+
+        const priorityBadge = document.getElementById("detailPriorityBadge");
+        priorityBadge.textContent = `우선순위: ${issue.priority}`;
+        priorityBadge.className = `priority-badge priority-${issue.priority}`;
+
+        let appCount = 0, rejCount = 0, holdCount = 0;
+        votes.forEach(v => {
+          if (v.value === '찬성') appCount++;
+          if (v.value === '반대') rejCount++;
+          if (v.value === '보류') holdCount++;
+        });
+
+        let docsSectionHtml = "";
+        const canGenerateDoc = ['승인', '보류', '거절'].includes(issue.status);
+        if (canGenerateDoc) {
+          docsSectionHtml = `
+            <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <strong style="color: #38bdf8; font-size: 0.88rem;">📄 Google Docs 회의록 / 결정문</strong>
+                <div style="font-size: 0.76rem; color: var(--text-muted);">${issue.status} 상태의 공식 의사결정 회의록 생성</div>
+              </div>
+              <div>
+                ${issue.docUrl ? 
+                  `<a href="${issue.docUrl}" target="_blank" class="btn btn-docs">🔗 Docs 회의록 열기 ↗</a>` : 
+                  `<button class="btn btn-docs" onclick="handleGenerateDocs('${issue.id}')">📝 회의록 자동 생성</button>`
+                }
+              </div>
+            </div>
+          `;
+        }
+
+        let voteCallBanner = "";
+        if (['제안', '논의중'].includes(issue.status)) {
+          voteCallBanner = `
+            <div style="background: var(--gold-surface); border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <strong style="color: var(--gold-bright); font-size: 0.88rem;">🗳️ 의사결정 투표 결의</strong>
+                <div style="font-size: 0.76rem; color: var(--text-sub);">이 안건을 공식 '승인대기' 투표 안건으로 상정합니다.</div>
+              </div>
+              <button class="btn btn-vote-call" onclick="handleCallVoteResolution('${issue.id}')">🗳️ 승인 투표 결의 개시</button>
+            </div>
+          `;
+        }
+
+        const bodyHtml = `
+          ${docsSectionHtml}
+          ${voteCallBanner}
+
+          <div class="detail-section">
+            <div class="detail-section-title">📌 안건 상세 개요</div>
+            <div class="grid-3col" style="font-size: 0.85rem; margin-bottom: 10px;">
+              <div><strong>카테고리:</strong> ${escapeHtml(issue.category)}</div>
+              <div><strong>제안자:</strong> ${escapeHtml(issue.proposer)}</div>
+              <div><strong>최종결정자:</strong> ${escapeHtml(issue.decisionOwner)}</div>
+              <div><strong>실행담당자:</strong> ${escapeHtml(issue.executor || '미정')}</div>
+              <div><strong>마감기한:</strong> ${escapeHtml(issue.deadline || '없음')}</div>
+              <div><strong>예상비용:</strong> ${escapeHtml(issue.estimatedCost || '미정')}</div>
+            </div>
+
+            <div style="margin-top: 12px;">
+              <strong style="color: var(--text-sub); font-size: 0.82rem;">■ 핵심 내용:</strong>
+              <p style="font-size: 0.9rem; color: var(--silver-text); margin-top: 4px; white-space: pre-line;">${escapeHtml(issue.summary)}</p>
+            </div>
+
+            ${issue.risk ? `
+              <div style="margin-top: 12px; background: rgba(244, 63, 94, 0.08); border-left: 3px solid var(--status-rose); padding: 8px 12px; border-radius: 4px;">
+                <strong style="color: #fb7185; font-size: 0.82rem;">⚠️ 리스크 및 주의사항:</strong>
+                <p style="font-size: 0.85rem; color: var(--text-sub); margin-top: 4px;">${escapeHtml(issue.risk)}</p>
+              </div>
+            ` : ''}
+
+            ${issue.status === '보류' ? `
+              <div style="margin-top: 12px; background: rgba(251, 146, 60, 0.1); border-left: 3px solid #fb923c; padding: 8px 12px; border-radius: 4px;">
+                <strong style="color: #fb923c; font-size: 0.82rem;">⏸️ 보류 사유 & 재검토일:</strong>
+                <p style="font-size: 0.85rem; color: var(--text-sub); margin-top: 4px;">
+                  사유: ${escapeHtml(issue.holdReason || '-')}<br>
+                  재검토 예정일: ${escapeHtml(issue.reviewDate || '-')}
+                </p>
+              </div>
+            ` : ''}
+          </div>
+
+          ${(issue.optionA || issue.optionB || issue.optionC) ? `
+            <div class="detail-section">
+              <div class="detail-section-title">💡 선택지 비교</div>
+              <div class="options-grid">
+                ${issue.optionA ? `<div class="option-card"><div class="option-tag">선택지 A</div><div>${escapeHtml(issue.optionA)}</div></div>` : ''}
+                ${issue.optionB ? `<div class="option-card"><div class="option-tag">선택지 B</div><div>${escapeHtml(issue.optionB)}</div></div>` : ''}
+                ${issue.optionC ? `<div class="option-card"><div class="option-tag">선택지 C</div><div>${escapeHtml(issue.optionC)}</div></div>` : ''}
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="detail-section">
+            <div class="detail-section-title">🔄 안건 상태 변경 (의사결정 진행)</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px;">
+              ⚠️ 규칙: **최종 승인** 상태를 거쳐야만 '실행중' 또는 '완료' 상태로 변경할 수 있습니다.
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <input type="text" id="statusActor" class="form-control" placeholder="변경자 이름" style="max-width: 140px;" value="${escapeHtml(issue.decisionOwner)}">
+              <select id="toStatusSelect" class="form-control" style="max-width: 130px;">
+                <option value="제안" ${issue.status === '제안' ? 'selected' : ''}>제안</option>
+                <option value="논의중" ${issue.status === '논의중' ? 'selected' : ''}>논의중</option>
+                <option value="승인대기" ${issue.status === '승인대기' ? 'selected' : ''}>승인대기</option>
+                <option value="승인" ${issue.status === '승인' ? 'selected' : ''}>승인</option>
+                <option value="거절" ${issue.status === '거절' ? 'selected' : ''}>거절</option>
+                <option value="보류" ${issue.status === '보류' ? 'selected' : ''}>보류</option>
+                <option value="실행중" ${issue.status === '실행중' ? 'selected' : ''}>실행중</option>
+                <option value="완료" ${issue.status === '완료' ? 'selected' : ''}>완료</option>
+              </select>
+              <button class="btn btn-primary" onclick="handleStatusChangeClick('${issue.id}', '${issue.status}')">상태 변경 반영</button>
+              <button class="btn btn-danger" style="margin-left: auto;" onclick="handleDeleteIssue('${issue.id}')">🗑️ 안건 삭제</button>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <div class="detail-section-title">🗳️ 투표 및 의견 현황</div>
+            <div class="votes-summary">
+              <div class="vote-pill" style="border-color: rgba(52, 211, 153, 0.4);">
+                <div style="font-size: 0.75rem; color: #34d399;">찬성</div>
+                <div class="count" style="color: #34d399;">${appCount}</div>
+              </div>
+              <div class="vote-pill" style="border-color: rgba(244, 63, 94, 0.4);">
+                <div style="font-size: 0.75rem; color: #fb7185;">반대</div>
+                <div class="count" style="color: #fb7185;">${rejCount}</div>
+              </div>
+              <div class="vote-pill" style="border-color: rgba(251, 146, 60, 0.4);">
+                <div style="font-size: 0.75rem; color: #fb923c;">보류</div>
+                <div class="count" style="color: #fb923c;">${holdCount}</div>
+              </div>
+            </div>
+
+            <div style="background: var(--bg-surface); border: 1px solid var(--silver-border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+              <strong style="font-size: 0.82rem; color: var(--text-sub);">투표 참여하기 (중복 투표 시 최신 투표로 수정됨)</strong>
+              <div class="grid-3col" style="margin-top: 6px;">
+                <input type="text" id="voterName" class="form-control" placeholder="투표자 이름">
+                <select id="voteValue" class="form-control">
+                  <option value="찬성">👍 찬성</option>
+                  <option value="반대">👎 반대</option>
+                  <option value="보류">⏸️ 보류</option>
+                </select>
+                <input type="text" id="voteReason" class="form-control" placeholder="사유 (선택사항)">
+              </div>
+              <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                <button class="btn btn-secondary" onclick="handleCastVote('${issue.id}')">투표 제출</button>
+              </div>
+            </div>
+
+            <div class="timeline-list">
+              ${votes.length > 0 ? votes.map(v => `
+                <div class="timeline-item">
+                  <div class="timeline-meta">
+                    <span class="timeline-author">👤 ${escapeHtml(v.voter)}</span>
+                    <span class="badge badge-${v.value === '찬성' ? '승인' : (v.value === '반대' ? '거절' : '보류')}">${v.value}</span>
+                  </div>
+                  <div style="font-size: 0.82rem; color: var(--text-sub);">${escapeHtml(v.reason || '사유 없음')}</div>
+                </div>
+              `).join('') : '<div style="font-size: 0.8rem; color: var(--text-muted);">아직 등록된 투표가 없습니다.</div>'}
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <div class="detail-section-title">💬 의견 (댓글 타임라인)</div>
+            <div class="timeline-list" style="margin-bottom: 14px;">
+              ${comments.length > 0 ? comments.map(c => `
+                <div class="timeline-item">
+                  <div class="timeline-meta">
+                    <span class="timeline-author">💬 ${escapeHtml(c.author)}</span>
+                    <span>${c.createdAt ? c.createdAt.split('T')[0] : ''}</span>
+                  </div>
+                  <div style="font-size: 0.85rem; color: var(--silver-text); white-space: pre-line;">${escapeHtml(c.text)}</div>
+                </div>
+              `).join('') : '<div style="font-size: 0.8rem; color: var(--text-muted);">첫 의견을 작성해보세요.</div>'}
+            </div>
+
+            <div style="display: flex; gap: 8px; align-items: flex-start;">
+              <input type="text" id="commentAuthor" class="form-control" placeholder="작성자 이름" style="max-width: 130px;">
+              <input type="text" id="commentText" class="form-control" placeholder="의견을 입력하세요...">
+              <button class="btn btn-secondary" onclick="handleAddComment('${issue.id}')">등록</button>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <div class="detail-section-title">📋 결정 변경 이력 (Audit Logs)</div>
+            <div class="timeline-list">
+              ${logs.map(l => `
+                <div class="timeline-item" style="font-size: 0.8rem;">
+                  <div class="timeline-meta">
+                    <span>${escapeHtml(l.actor)}</span>
+                    <span>${l.createdAt}</span>
+                  </div>
+                  <div><strong>${l.fromStatus} → ${l.toStatus}</strong> : ${escapeHtml(l.reason || '')}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+
+        document.getElementById("detailModalBody").innerHTML = bodyHtml;
+        openModal("detailModal");
+      });
+    }
+
+    function handleCallVoteResolution(issueId) {
+      const actor = document.getElementById("statusActor").value || "제안자";
+      apiCall("updateIssueStatus", { issueId: issueId, actor: actor, toStatus: "승인대기", holdReason: "", reviewDate: "" }, res => {
+        showToast("안건이 '승인대기' 투표 안건으로 결의 상정되었습니다!", "success");
+        loadDashboardAndIssues();
+        openDetailModal(issueId);
+      });
+    }
+
+    function handleCreateIssue(e) {
+      e.preventDefault();
+      const categoryVal = document.getElementById("newCategory").value;
+
+      const data = {
+        title: document.getElementById("newTitle").value,
+        category: categoryVal,
+        priority: document.getElementById("newPriority").value,
+        deadline: document.getElementById("newDeadline").value,
+        proposer: document.getElementById("newProposer").value,
+        decisionOwner: document.getElementById("newDecisionOwner").value,
+        executor: document.getElementById("newExecutor").value,
+        estimatedCost: document.getElementById("newEstimatedCost").value,
+        summary: document.getElementById("newSummary").value,
+        risk: document.getElementById("newRisk").value,
+        optionA: document.getElementById("newOptionA").value,
+        optionB: document.getElementById("newOptionB").value,
+        optionC: document.getElementById("newOptionC").value
+      };
+
+      registerNewCategory(categoryVal);
+
+      apiCall("createIssue", data, res => {
+        showToast("새 안건이 성공적으로 등록되었습니다!", "success");
+        closeModal("newIssueModal");
+        document.getElementById("newIssueForm").reset();
+        loadDashboardAndIssues();
+      });
+    }
+
+    let pendingHoldContext = null;
+
+    function handleStatusChangeClick(issueId, currentStatus) {
+      const actor = document.getElementById("statusActor").value;
+      const toStatus = document.getElementById("toStatusSelect").value;
+
+      if (!actor || actor.trim() === '') {
+        showToast("변경자 이름을 입력하세요.", "error");
+        return;
+      }
+
+      if ((toStatus === '실행중' || toStatus === '완료') && currentStatus !== '승인' && currentStatus !== '실행중') {
+        showToast("최종 승인(승인 상태)을 거쳐야만 '실행중' 또는 '완료' 상태로 변경할 수 있습니다.", "error");
+        return;
+      }
+
+      if (toStatus === '보류') {
+        pendingHoldContext = { issueId, actor, toStatus };
+        openModal("holdModal");
+        return;
+      }
+
+      apiCall("updateIssueStatus", { issueId: issueId, actor: actor, toStatus: toStatus, holdReason: "", reviewDate: "" }, res => {
+        showToast(`안건 상태가 '${toStatus}'(으)로 변경되었습니다.`, "success");
+        loadDashboardAndIssues();
+        openDetailModal(issueId);
+      });
+    }
+
+    function confirmHoldStatusChange() {
+      const reason = document.getElementById("holdModalReason").value;
+      const reviewDate = document.getElementById("holdModalReviewDate").value;
+
+      if (!reason || reason.trim() === '') {
+        showToast("보류 사유를 입력해주세요.", "error");
+        return;
+      }
+      if (!reviewDate || reviewDate.trim() === '') {
+        showToast("재검토 예정일을 설정해주세요.", "error");
+        return;
+      }
+
+      const { issueId, actor, toStatus } = pendingHoldContext;
+
+      apiCall("updateIssueStatus", { issueId: issueId, actor: actor, toStatus: toStatus, holdReason: reason, reviewDate: reviewDate }, res => {
+        showToast("안건이 보류 상태로 변경되었습니다.", "success");
+        closeModal("holdModal");
+        loadDashboardAndIssues();
+        openDetailModal(issueId);
+      });
+    }
+
+    function handleCastVote(issueId) {
+      const voter = document.getElementById("voterName").value;
+      const value = document.getElementById("voteValue").value;
+      const reason = document.getElementById("voteReason").value;
+
+      if (!voter || voter.trim() === '') {
+        showToast("투표자 이름을 입력해주세요.", "error");
+        return;
+      }
+
+      apiCall("castVote", { issueId: issueId, voter: voter, value: value, reason: reason }, res => {
+        showToast("투표가 정상 기록되었습니다.", "success");
+        openDetailModal(issueId);
+      });
+    }
+
+    function handleAddComment(issueId) {
+      const author = document.getElementById("commentAuthor").value;
+      const text = document.getElementById("commentText").value;
+
+      if (!author || author.trim() === '') {
+        showToast("작성자 이름을 입력하세요.", "error");
+        return;
+      }
+      if (!text || text.trim() === '') {
+        showToast("의견 내용을 입력하세요.", "error");
+        return;
+      }
+
+      apiCall("addComment", { issueId: issueId, author: author, text: text }, res => {
+        showToast("의견이 등록되었습니다.", "success");
+        openDetailModal(issueId);
+      });
+    }
+
+    function handleGenerateDocs(issueId) {
+      showToast("Google Docs 회의록을 생성하는 중입니다...", "info");
+      apiCall("generateMeetingDoc", { issueId: issueId }, res => {
+        showToast("Docs 회의록이 생성되었습니다!", "success");
+        openDetailModal(issueId);
+        loadDashboardAndIssues();
+      });
+    }
+
+    function handleDeleteIssue(issueId) {
+      const actor = document.getElementById("statusActor").value || "관리자";
+      if (confirm("정말로 이 안건을 삭제하시겠습니까? (삭제 처리 후 목록에서 숨겨집니다)")) {
+        apiCall("deleteIssue", { issueId: issueId, actor: actor }, res => {
+          showToast("안건이 삭제 처리되었습니다.", "success");
+          closeModal("detailModal");
+          loadDashboardAndIssues();
+        });
+      }
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add("active"); }
+    function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+    function openNewIssueModal() { openModal("newIssueModal"); }
+
+    function showToast(msg, type = "info") {
+      const container = document.getElementById("toastContainer");
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<span>${msg}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function initLocalStorageMock() {
+      if (!localStorage.getItem("DECISION_ISSUES")) {
+        const now = new Date().toISOString();
+
+        const sampleIssues = [
+          {
+            id: 'ISSUE_101', title: '신규 프로젝트 추진의 건', category: '기획',
+            proposer: '홍길동', decisionOwner: '이몽룡', executor: '성춘향',
+            deadline: '7월 15일', estimatedCost: '500만원',
+            summary: '신규 서비스 도입을 위한 시장 조사 및 사전 개발 범위 확정을 논의함.',
+            risk: '일정 지연 및 초기 예산 초과 가능성.',
+            optionA: 'A안: 외주 개발 진행 (500만원)',
+            optionB: 'B안: 내부 인력 진행',
+            optionC: 'C안: 다음 분기 재검토',
+            status: '논의중', priority: '상', holdReason: '', reviewDate: '', docUrl: '',
+            createdAt: now, updatedAt: now, deleted: 'FALSE'
+          },
+          {
+            id: 'ISSUE_102', title: '하반기 마케팅 예산 집행 건', category: '마케팅',
+            proposer: '성춘향', decisionOwner: '이몽룡', executor: '홍길동',
+            deadline: '7월 20일', estimatedCost: '300만원',
+            summary: '온라인 브랜드 홍보 강화를 위한 광고 매체 선정 및 집행 계획안.',
+            risk: '타깃 고객 전환율 미달 가능성.',
+            optionA: 'SNS 광고 집행', optionB: '검색 광고 집행', optionC: '혼합 진행',
+            status: '승인대기', priority: '상', holdReason: '', reviewDate: '', docUrl: '',
+            createdAt: now, updatedAt: now, deleted: 'FALSE'
+          },
+          {
+            id: 'ISSUE_103', title: '사무실 장비 교체 건', category: '재무',
+            proposer: '이몽룡', decisionOwner: '이몽룡', executor: '홍길동',
+            deadline: '8월 1일', estimatedCost: '200만원',
+            summary: '노후 개발 장비 및 모니터 순차 교체.',
+            risk: '자금 집행 우선순위 조율 필요.',
+            optionA: '일시 구입', optionB: '렌탈 계약', optionC: '보류',
+            status: '승인', priority: '중', holdReason: '', reviewDate: '', docUrl: '',
+            createdAt: now, updatedAt: now, deleted: 'FALSE'
+          }
+        ];
+
+        const sampleComments = [
+          { id: 'COM_1', issueId: 'ISSUE_101', author: '이몽룡', text: 'A안 외주 개발 업체의 포트폴리오 확인이 필요합니다.', createdAt: now },
+          { id: 'COM_2', issueId: 'ISSUE_102', author: '성춘향', text: 'SNS 광고 집행 시 효율 측정이 용이합니다.', createdAt: now }
+        ];
+
+        const sampleVotes = [
+          { id: 'VOT_1', issueId: 'ISSUE_102', voter: '홍길동', value: '찬성', reason: 'SNS 광고 추진에 동의합니다.', createdAt: now },
+          { id: 'VOT_2', issueId: 'ISSUE_102', voter: '성춘향', value: '찬성', reason: '타깃층 설정이 명확합니다.', createdAt: now }
+        ];
+
+        const sampleLogs = [
+          { id: 'LOG_1', issueId: 'ISSUE_101', actor: '홍길동', fromStatus: '-', toStatus: '논의중', reason: '최초 안건 작성', createdAt: now },
+          { id: 'LOG_2', issueId: 'ISSUE_102', actor: '성춘향', fromStatus: '논의중', toStatus: '승인대기', reason: '최종 승인 투표 결의 개시', createdAt: now },
+          { id: 'LOG_3', issueId: 'ISSUE_103', actor: '이몽룡', fromStatus: '승인대기', toStatus: '승인', reason: '최종결정권자 최종 승인 완료', createdAt: now }
+        ];
+
+        localStorage.setItem("DECISION_ISSUES", JSON.stringify(sampleIssues));
+        localStorage.setItem("DECISION_COMMENTS", JSON.stringify(sampleComments));
+        localStorage.setItem("DECISION_VOTES", JSON.stringify(sampleVotes));
+        localStorage.setItem("DECISION_LOGS", JSON.stringify(sampleLogs));
+      }
+    }
+
+    const mockBackend = {
+      getDashboardData: function() {
+        const issues = JSON.parse(localStorage.getItem("DECISION_ISSUES") || "[]");
+        const logs = JSON.parse(localStorage.getItem("DECISION_LOGS") || "[]");
+
+        let pendingApproval = 0, onHold = 0, urgent = 0, deadlineImminent = 0;
+        const activeIssues = issues.filter(i => i.deleted !== 'TRUE');
+
+        activeIssues.forEach(i => {
+          if (i.status === '승인대기') pendingApproval++;
+          if (i.status === '보류') onHold++;
+          if (i.priority === '상') urgent++;
+          if (i.deadline && i.deadline.includes("7월") && i.status !== '완료') deadlineImminent++;
+        });
+
+        return {
+          summary: { total: activeIssues.length, pendingApproval, onHold, urgent, deadlineImminent },
+          recentLogs: logs.slice().reverse().slice(0, 7)
+        };
+      },
+
+      getIssues: function(filters) {
+        let issues = JSON.parse(localStorage.getItem("DECISION_ISSUES") || "[]");
+        issues = issues.filter(i => i.deleted !== 'TRUE');
+
+        if (!filters) return issues;
+
+        return issues.filter(item => {
+          if (filters.search && filters.search.trim() !== '') {
+            const q = filters.search.toLowerCase().trim();
+            const matchTitle = (item.title || '').toLowerCase().includes(q);
+            const matchProposer = (item.proposer || '').toLowerCase().includes(q);
+            const matchSummary = (item.summary || '').toLowerCase().includes(q);
+            if (!matchTitle && !matchProposer && !matchSummary) return false;
+          }
+          if (filters.tab === 'approved') {
+            if (['승인', '실행중', '완료'].includes(item.status) === false) return false;
+          }
+          if (filters.status && filters.status !== '전체' && item.status !== filters.status) return false;
+          if (filters.category && filters.category !== '전체' && item.category !== filters.category) return false;
+          if (filters.priority && filters.priority !== '전체' && item.priority !== filters.priority) return false;
+          return true;
+        });
+      },
+
+      getIssueDetail: function(payload) {
+        const issueId = payload.issueId || payload;
+        const issues = JSON.parse(localStorage.getItem("DECISION_ISSUES") || "[]");
+        const comments = JSON.parse(localStorage.getItem("DECISION_COMMENTS") || "[]");
+        const votes = JSON.parse(localStorage.getItem("DECISION_VOTES") || "[]");
+        const logs = JSON.parse(localStorage.getItem("DECISION_LOGS") || "[]");
+
+        const target = issues.find(i => i.id === issueId);
+        if (!target) throw new Error("안건을 찾을 수 없습니다.");
+
+        return {
+          issue: target,
+          comments: comments.filter(c => c.issueId === issueId),
+          votes: votes.filter(v => v.issueId === issueId),
+          logs: logs.filter(l => l.issueId === issueId).reverse()
+        };
+      },
+
+      createIssue: function(data) {
+        if (!data.title) throw new Error("제목은 필수입니다.");
+        if (!data.proposer) throw new Error("제안자는 필수입니다.");
+        if (!data.decisionOwner) throw new Error("최종결정자는 필수입니다.");
+        if (!data.summary) throw new Error("핵심내용은 필수입니다.");
+
+        const issues = JSON.parse(localStorage.getItem("DECISION_ISSUES") || "[]");
+        const logs = JSON.parse(localStorage.getItem("DECISION_LOGS") || "[]");
+        const now = new Date().toISOString();
+        const newId = "ISSUE_" + Date.now();
+
+        const newItem = {
+          id: newId, title: data.title.trim(), category: data.category || '기타',
+          proposer: data.proposer.trim(), decisionOwner: data.decisionOwner.trim(),
+          executor: data.executor || '', deadline: data.deadline || '',
+          estimatedCost: data.estimatedCost || '', summary: data.summary.trim(),
+          risk: data.risk || '', optionA: data.optionA || '', optionB: data.optionB || '',
+          optionC: data.optionC || '', status: '제안', priority: data.priority || '중',
+          holdReason: '', reviewDate: '', docUrl: '', createdAt: now, updatedAt: now, deleted: 'FALSE'
+        };
+
+        issues.unshift(newItem);
+        logs.push({ id: 'LOG_' + Date.now(), issueId: newId, actor: data.proposer.trim(), fromStatus: '-', toStatus: '제안', reason: '최초 안건 등록', createdAt: now });
+
+        localStorage.setItem("DECISION_ISSUES", JSON.stringify(issues));
+        localStorage.setItem("DECISION_LOGS", JSON.stringify(logs));
+        return { success: true };
+      },
+
+      updateIssueStatus: function(params) {
+        const { issueId, actor, toStatus, holdReason, reviewDate } = params;
+        let issues = JSON.parse(localStorage.getItem("DECISION_ISSUES") || "[]");
+        let logs = JSON.parse(localStorage.getItem("DECISION_LOGS") || "[]");
+        const idx = issues.findIndex(i => i.id === issueId);
+        if (idx === -1) throw new Error("안건이 없습니다.");
+
+        const currentStatus = issues[idx].status;
+
+        if ((toStatus === '실행중' || toStatus === '완료') && currentStatus !== '승인' && currentStatus !== '실행중') {
+          throw new Error("최종 승인(승인 상태)을 거치지 않은 안건은 '실행중' 또는 '완료' 상태로 변경할 수 없습니다.");
+        }
+
+        if (toStatus === '보류') {
+          if (!holdReason) throw new Error("보류 사유가 필요합니다.");
+          if (!reviewDate) throw new Error("재검토일이 필요합니다.");
+          issues[idx].holdReason = holdReason;
+          issues[idx].reviewDate = reviewDate;
+        }
+
+        issues[idx].status = toStatus;
+        issues[idx].updatedAt = new Date().toISOString();
+
+        logs.push({
+          id: 'LOG_' + Date.now(), issueId: issueId, actor: actor,
+          fromStatus: currentStatus, toStatus: toStatus,
+          reason: toStatus === '보류' ? `보류사유: ${holdReason}` : `상태 변경: ${currentStatus} -> ${toStatus}`,
+          createdAt: new Date().toISOString()
+        });
+
+        localStorage.setItem("DECISION_ISSUES", JSON.stringify(issues));
+        localStorage.setItem("DECISION_LOGS", JSON.stringify(logs));
+        return { success: true };
+      },
+
+      castVote: function(params) {
+        const { issueId, voter, value, reason } = params;
+        let votes = JSON.parse(localStorage.getItem("DECISION_VOTES") || "[]");
+        const existingIdx = votes.findIndex(v => v.issueId === issueId && v.voter === voter.trim());
+
+        const now = new Date().toISOString();
+        if (existingIdx !== -1) {
+          votes[existingIdx].value = value;
+          votes[existingIdx].reason = reason || '';
+          votes[existingIdx].createdAt = now;
+        } else {
+          votes.push({ id: 'VOT_' + Date.now(), issueId, voter: voter.trim(), value, reason: reason || '', createdAt: now });
+        }
+
+        localStorage.setItem("DECISION_VOTES", JSON.stringify(votes));
+        return { success: true };
+      },
+
+      addComment: function(params) {
+        const { issueId, author, text } = params;
+        let comments = JSON.parse(localStorage.getItem("DECISION_COMMENTS") || "[]");
+        comments.push({ id: 'COM_' + Date.now(), issueId, author: author.trim(), text: text.trim(), createdAt: new Date().toISOString() });
+        localStorage.setItem("DECISION_COMMENTS", JSON.stringify(comments));
+        return { success: true };
+      },
+
+      deleteIssue: function(params) {
+        const { issueId, actor } = params;
+        let issues = JSON.parse(localStorage.getItem("DECISION_ISSUES") || "[]");
+        let logs = JSON.parse(localStorage.getItem("DECISION_LOGS") || "[]");
+        const idx = issues.findIndex(i => i.id === issueId);
+        if (idx !== -1) {
+          issues[idx].deleted = 'TRUE';
+          logs.push({ id: 'LOG_' + Date.now(), issueId, actor, fromStatus: issues[idx].status, toStatus: '삭제', reason: '안건 삭제 처리', createdAt: new Date().toISOString() });
+          localStorage.setItem("DECISION_ISSUES", JSON.stringify(issues));
+          localStorage.setItem("DECISION_LOGS", JSON.stringify(logs));
+        }
+        return { success: true };
+      },
+
+      generateMeetingDoc: function(payload) {
+        const issueId = payload.issueId || payload;
+        let issues = JSON.parse(localStorage.getItem("DECISION_ISSUES") || "[]");
+        const idx = issues.findIndex(i => i.id === issueId);
+        if (idx !== -1) {
+          const fakeDocUrl = "https://docs.google.com/document/d/sample_decision_" + issueId;
+          issues[idx].docUrl = fakeDocUrl;
+          localStorage.setItem("DECISION_ISSUES", JSON.stringify(issues));
+          return { success: true, docUrl: fakeDocUrl };
+        }
+        throw new Error("안건을 찾지 못했습니다.");
+      }
+    };
+  </script>
+</body>
+</html>
