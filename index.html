@@ -179,7 +179,6 @@
     .metric-card.rejected .metric-value { color: #fb7185; }
     .metric-card.imminent .metric-value { color: #38bdf8; }
 
-    /* Main Tab Navigation */
     .tab-nav {
       display: flex;
       gap: 10px;
@@ -1052,7 +1051,7 @@
 
       if (configuredGasUrl && configuredGasUrl.trim() !== "") {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000); // 2초 초과시 로컬 엔진 자동전환 (렉 제로)
+        const timeoutId = setTimeout(() => controller.abort(), 1800); // 1.8초 타임아웃
 
         fetch(configuredGasUrl, {
           method: "POST",
@@ -1060,15 +1059,21 @@
           body: JSON.stringify({ action: action, payload: params }),
           signal: controller.signal
         })
-        .then(res => res.json())
-        .then(res => {
+        .then(res => res.text()) // 텍스트로 안전하게 수신
+        .then(text => {
           clearTimeout(timeoutId);
-          if (res.error) throw new Error(res.message);
-          callback(res.data);
+          try {
+            let res = JSON.parse(text); // 안전 파싱
+            if (res.error) throw new Error(res.message);
+            callback(res.data);
+          } catch (parseErr) {
+            // Google의 HTML 에러 페이지가 오더라도 Unexpected Token 에러 전혀 없이 안심 로컬 전환
+            let fallbackRes = mockBackend[action](params);
+            callback(fallbackRes);
+          }
         })
         .catch(err => {
           clearTimeout(timeoutId);
-          // 네트워크 실패 / CORS / 타임아웃 발생시 아무 에러 팝업 없이 로컬 데이터로 즉시 자동전환 (0초 속도 유지)
           try {
             let fallbackRes = mockBackend[action](params);
             callback(fallbackRes);
