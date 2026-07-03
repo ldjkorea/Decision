@@ -1,9 +1,9 @@
 /**
- * Decision (가족 중대 의사결정 플랫폼) - Google Apps Script Backend
+ * Decision (의사결정 플랫폼) - Google Apps Script Backend
  */
 
 var CONFIG = {
-  SPREADSHEET_ID: "", // 특정 Spreadsheet ID (비어있으면 Active Spreadsheet 또는 자동 생성)
+  SPREADSHEET_ID: "",
   SHEET_NAMES: {
     ISSUES: "Issues",
     COMMENTS: "Comments",
@@ -13,28 +13,23 @@ var CONFIG = {
   }
 };
 
-// Fail-safe getDb() - NEVER returns null
 function getDb() {
   var ss = null;
   var prop = PropertiesService.getScriptProperties();
   var savedId = prop.getProperty("SPREADSHEET_ID");
 
-  // 1. CONFIG.SPREADSHEET_ID가 설정되어 있는 경우
   if (CONFIG.SPREADSHEET_ID && CONFIG.SPREADSHEET_ID.trim() !== "") {
     try { ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID.trim()); } catch (e) {}
   }
 
-  // 2. 이미 생성되어 저장된 Script Properties ID가 있는 경우
   if (!ss && savedId) {
     try { ss = SpreadsheetApp.openById(savedId); } catch (e) {}
   }
 
-  // 3. 바운드 스크립트로 실행되어 ActiveSpreadsheet가 있는 경우
   if (!ss) {
     try { ss = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) {}
   }
 
-  // 4. 위 모든 시도가 실패 시 새 구글 시트 자동 생성 후 ID 저장
   if (!ss) {
     ss = SpreadsheetApp.create("Decision_DB");
     prop.setProperty("SPREADSHEET_ID", ss.getId());
@@ -52,7 +47,7 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  var template = HtmlService.createTemplateFromFile("Index");
+  var template = HtmlService.createTemplateFromFile("index");
   return template.evaluate()
     .setTitle("Decision - 의사결정 플랫폼")
     .addMetaTag("viewport", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
@@ -96,8 +91,6 @@ function handleApiRequest(action, payload) {
         return { success: true, data: updateIssueStatus(payload.issueId, payload.actor, payload.toStatus, payload.holdReason, payload.reviewDate) };
       case 'deleteIssue':
         return { success: true, data: deleteIssue(payload.issueId, payload.actor) };
-      case 'generateMeetingDoc':
-        return { success: true, data: generateMeetingDoc(payload.issueId) };
       default:
         throw new Error("알 수 없는 API action입니다: " + action);
     }
@@ -142,7 +135,7 @@ function seedInitialData(ss) {
   var membersSheet = ss.getSheetByName(CONFIG.SHEET_NAMES.MEMBERS);
   if (membersSheet.getLastRow() <= 1) {
     var initialMembers = [
-      ['MEM_1', '이몽룡', '최종결정권자 / 대표', true, now],
+      ['MEM_1', '이몽룡', '최종결정권자', true, now],
       ['MEM_2', '홍길동', '기획담당', false, now],
       ['MEM_3', '성춘향', '운영담당', false, now]
     ];
@@ -202,12 +195,11 @@ function getDashboardData() {
   var members = getMembersData(ss);
 
   var total = issues.length;
-  var pendingApproval = 0, onHold = 0, urgent = 0, deadlineImminent = 0;
+  var pendingApproval = 0, rejected = 0, deadlineImminent = 0;
 
   issues.forEach(function(issue) {
     if (issue.status === '승인대기') pendingApproval++;
-    if (issue.status === '보류') onHold++;
-    if (issue.priority === '상') urgent++;
+    if (issue.status === '거절') rejected++;
     if (issue.deadline && issue.deadline.indexOf("7월") !== -1 && issue.status !== '완료') {
       deadlineImminent++;
     }
@@ -217,8 +209,7 @@ function getDashboardData() {
     summary: {
       total: total,
       pendingApproval: pendingApproval,
-      onHold: onHold,
-      urgent: urgent,
+      rejected: rejected,
       deadlineImminent: deadlineImminent
     },
     recentLogs: logs.slice(0, 7),
@@ -243,9 +234,12 @@ function getIssues(filters) {
       if (!matchTitle && !matchProposer && !matchSummary) return false;
     }
 
-    if (filters.tab === 'approved') {
-      // 통과(결재 완료) 안건 탭: 승인, 실행중, 완료
-      if (['승인', '실행중', '완료'].indexOf(item.status) === -1) return false;
+    if (filters.tab === 'progress') {
+      // 진행중 안건: 제안, 논의중, 승인대기, 보류, 실행중
+      if (['제안', '논의중', '승인대기', '보류', '실행중'].indexOf(item.status) === -1) return false;
+    } else if (filters.tab === 'finished') {
+      // 종료된 안건: 승인, 거절(부결), 완료
+      if (['승인', '거절', '완료'].indexOf(item.status) === -1) return false;
     }
 
     if (filters.status && filters.status !== '전체' && item.status !== filters.status) return false;
@@ -422,109 +416,6 @@ function deleteIssue(issueId, actor) {
   throw new Error("삭제할 안건을 찾지 못했습니다.");
 }
 
-function generateMeetingDoc(issueId) {
-  var ss = getDb();
-  var issueDetail = getIssueDetail(issueId);
-  var issue = issueDetail.issue;
-
-  var allowedStatuses = ['승인', '보류', '거절'];
-  if (allowedStatuses.indexOf(issue.status) === -1) {
-    throw new Error("회의록은 '승인', '보류', '거절' 상태에서만 생성 가능합니다.");
-  }
-
-  var dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
-  var docTitle = "Decision_" + issue.title + "_" + dateStr;
-
-  var doc = DocumentApp.create(docTitle);
-  var body = doc.getBody();
-  body.clear();
-
-  var titlePara = body.appendParagraph("의사결정 회의록 / 결정문");
-  titlePara.setHeading(DocumentApp.ParagraphHeading.HEADING1);
-  titlePara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-
-  body.appendParagraph("문서 생성일: " + new Date().toLocaleString("ko-KR"));
-  body.appendHorizontalRule();
-
-  body.appendParagraph("1. 안건 개요").setHeading(DocumentApp.ParagraphHeading.HEADING2);
-  var summaryTableData = [
-    ["안건 제목", issue.title], ["카테고리", issue.category],
-    ["제안자", issue.proposer], ["최종결정자", issue.decisionOwner],
-    ["실행담당자", issue.executor || "미정"], ["최종 상태", issue.status],
-    ["우선순위", issue.priority], ["마감일", issue.deadline || "없음"],
-    ["예상 비용", issue.estimatedCost || "없음"]
-  ];
-
-  if (issue.status === '보류') {
-    summaryTableData.push(["보류 사유", issue.holdReason || ""]);
-    summaryTableData.push(["재검토 일자", issue.reviewDate || ""]);
-  }
-
-  var table = body.appendTable(summaryTableData);
-  table.setBorderColor("#cbd5e1");
-
-  body.appendParagraph("\n2. 핵심 내용 및 리스크 분석").setHeading(DocumentApp.ParagraphHeading.HEADING2);
-  body.appendParagraph("■ 핵심 내용:").setBold(true);
-  body.appendParagraph(issue.summary || "내용 없음");
-  body.appendParagraph("\n■ 예상 리스크:").setBold(true);
-  body.appendParagraph(issue.risk || "없음");
-
-  body.appendParagraph("\n3. 비교 선택지").setHeading(DocumentApp.ParagraphHeading.HEADING2);
-  body.appendParagraph("· 선택지 A: " + (issue.optionA || "없음"));
-  body.appendParagraph("· 선택지 B: " + (issue.optionB || "없음"));
-  body.appendParagraph("· 선택지 C: " + (issue.optionC || "없음"));
-
-  body.appendParagraph("\n4. 투표 및 의견 기록").setHeading(DocumentApp.ParagraphHeading.HEADING2);
-  var approveCount = 0, rejectCount = 0, holdCount = 0;
-  issueDetail.votes.forEach(function(v) {
-    if (v.value === '찬성') approveCount++;
-    if (v.value === '반대') rejectCount++;
-    if (v.value === '보류') holdCount++;
-  });
-  body.appendParagraph("■ 투표 집계: 찬성 " + approveCount + "표 / 반대 " + rejectCount + "표 / 보류 " + holdCount + "표").setBold(true);
-
-  if (issueDetail.votes.length > 0) {
-    var voteRows = [["투표자", "선택", "사유", "투표일시"]];
-    issueDetail.votes.forEach(function(v) { voteRows.push([v.voter, v.value, v.reason || "-", v.createdAt]); });
-    body.appendTable(voteRows);
-  }
-
-  body.appendParagraph("\n■ 의견 목록:").setBold(true);
-  if (issueDetail.comments.length > 0) {
-    issueDetail.comments.forEach(function(c) {
-      body.appendParagraph("· [" + c.author + "] (" + c.createdAt + "): " + c.text);
-    });
-  }
-
-  body.appendParagraph("\n5. 의사결정 진행 이력").setHeading(DocumentApp.ParagraphHeading.HEADING2);
-  if (issueDetail.logs.length > 0) {
-    var logRows = [["일시", "작성자/행동자", "이전상태 -> 변경상태", "사유/설명"]];
-    issueDetail.logs.forEach(function(l) {
-      logRows.push([l.createdAt, l.actor, l.fromStatus + " -> " + l.toStatus, l.reason || "-"]);
-    });
-    body.appendTable(logRows);
-  }
-
-  doc.saveAndClose();
-  var docUrl = doc.getUrl();
-
-  var sheet = ss.getSheetByName(CONFIG.SHEET_NAMES.ISSUES);
-  var data = sheet.getDataRange().getValues();
-  var headers = data[0];
-  var idIdx = headers.indexOf('id');
-  var docUrlIdx = headers.indexOf('docUrl');
-
-  for (var i = 1; i < data.length; i++) {
-    if (data[i][idIdx] === issueId) {
-      sheet.getRange(i + 1, docUrlIdx + 1).setValue(docUrl);
-      break;
-    }
-  }
-
-  return { success: true, docUrl: docUrl };
-}
-
-// Data helpers
 function getIssuesData(ss) {
   var sheet = ss.getSheetByName(CONFIG.SHEET_NAMES.ISSUES);
   var values = sheet.getDataRange().getValues();

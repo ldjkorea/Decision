@@ -129,20 +129,26 @@
     }
 
     .dashboard-section {
-      margin: 20px 0 28px 0;
+      margin: 20px 0 24px 0;
     }
 
     .dashboard-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     .metric-card {
       background: var(--bg-surface);
       border: 1px solid var(--silver-border);
       border-radius: var(--radius-md);
-      padding: 16px 18px;
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -159,19 +165,18 @@
     .metric-title {
       font-size: 0.8rem;
       color: var(--text-muted);
-      font-weight: 500;
+      font-weight: 600;
     }
 
     .metric-value {
-      font-size: 1.7rem;
+      font-size: 1.6rem;
       font-weight: 800;
-      margin-top: 6px;
+      margin-top: 4px;
     }
 
     .metric-card.total .metric-value { color: #e2e8f0; }
     .metric-card.pending .metric-value { color: var(--gold-bright); }
-    .metric-card.hold .metric-value { color: #fb923c; }
-    .metric-card.urgent .metric-value { color: #fb7185; }
+    .metric-card.rejected .metric-value { color: #fb7185; }
     .metric-card.imminent .metric-value { color: #38bdf8; }
 
     /* Main Tab Navigation */
@@ -182,9 +187,10 @@
     }
 
     .tab-btn {
-      padding: 10px 18px;
-      border-radius: var(--radius-sm);
-      font-size: 0.9rem;
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.92rem;
       font-weight: 700;
       background: var(--bg-surface);
       color: var(--text-muted);
@@ -193,6 +199,7 @@
       transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
     }
 
@@ -290,16 +297,6 @@
     }
 
     .btn-vote-call:hover {
-      filter: brightness(1.1);
-    }
-
-    .btn-docs {
-      background: linear-gradient(135deg, #38bdf8, #0284c7);
-      color: white;
-      box-shadow: 0 4px 14px rgba(14, 165, 233, 0.3);
-    }
-
-    .btn-docs:hover {
       filter: brightness(1.1);
     }
 
@@ -602,6 +599,24 @@
       margin-bottom: 4px;
     }
 
+    .summary-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--gold-border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-top: 10px;
+    }
+
+    .summary-box-header {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--gold-bright);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .recent-logs-section {
       background: var(--bg-surface);
       border: 1px solid var(--silver-border);
@@ -665,7 +680,7 @@
 
   <div class="container">
     
-    <!-- Dashboard Summary -->
+    <!-- 4 Dashboard Summary Metric Cards -->
     <section class="dashboard-section">
       <div class="dashboard-grid">
         <div class="metric-card total">
@@ -673,16 +688,12 @@
           <div class="metric-value" id="statTotal">0</div>
         </div>
         <div class="metric-card pending">
-          <div class="metric-title">승인대기</div>
+          <div class="metric-title">승인 대기</div>
           <div class="metric-value" id="statPending">0</div>
         </div>
-        <div class="metric-card hold">
-          <div class="metric-title">보류 안건</div>
-          <div class="metric-value" id="statHold">0</div>
-        </div>
-        <div class="metric-card urgent">
-          <div class="metric-title">긴급 안건</div>
-          <div class="metric-value" id="statUrgent">0</div>
+        <div class="metric-card rejected">
+          <div class="metric-title">부결 안건</div>
+          <div class="metric-value" id="statRejected">0</div>
         </div>
         <div class="metric-card imminent">
           <div class="metric-title">마감 임박</div>
@@ -691,13 +702,13 @@
       </div>
     </section>
 
-    <!-- Tab Navigation Bar -->
+    <!-- Main Tab Navigation: Progress vs Finished -->
     <div class="tab-nav">
-      <button class="tab-btn active" id="tabAllBtn" onclick="switchMainTab('all')">
-        📋 전체 / 최근 안건
+      <button class="tab-btn active" id="tabProgressBtn" onclick="switchMainTab('progress')">
+        📋 진행 중인 안건
       </button>
-      <button class="tab-btn" id="tabApprovedBtn" onclick="switchMainTab('approved')">
-        🏆 결재 통과 안건 (승인/완료)
+      <button class="tab-btn" id="tabFinishedBtn" onclick="switchMainTab('finished')">
+        🏆 종료된 안건 (승인/부결)
       </button>
     </div>
 
@@ -714,7 +725,7 @@
             <option value="논의중">논의중</option>
             <option value="승인대기">승인대기</option>
             <option value="승인">승인</option>
-            <option value="거절">거절</option>
+            <option value="거절">거절(부결)</option>
             <option value="보류">보류</option>
             <option value="실행중">실행중</option>
             <option value="완료">완료</option>
@@ -742,7 +753,7 @@
     <!-- Agendas List Section -->
     <main>
       <div class="issues-header">
-        <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--silver-text);" id="sectionHeadingTitle">의사결정 안건 목록</h2>
+        <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--silver-text);" id="sectionHeadingTitle">진행 중인 의사결정 안건</h2>
         <span class="issues-count" id="issuesCount">총 0개 항목</span>
       </div>
 
@@ -770,7 +781,7 @@
       </div>
       <div class="modal-body">
         <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 12px;">
-          Google Apps Script 배포 시 생성된 **웹 앱 URL**을 입력하면 Google Sheets 및 Docs와 실시간 연동됩니다.
+          Google Apps Script 배포 시 생성된 **웹 앱 URL**을 입력하면 Google Sheets와 실시간 연동됩니다.
         </p>
         <div class="form-group">
           <label class="form-label">Apps Script Web App URL</label>
@@ -937,7 +948,7 @@
   <script>
     let currentIssues = [];
     let activeDetailId = null;
-    let currentTab = 'all'; // 'all' or 'approved'
+    let currentTab = 'progress'; // 'progress' or 'finished'
     let isGasEnv = (typeof google !== 'undefined' && google.script && google.script.run);
     let configuredGasUrl = localStorage.getItem("DECISION_GAS_URL") || "";
     let knownCategories = JSON.parse(localStorage.getItem("DECISION_CATEGORIES") || '["기획", "개발", "마케팅", "재무", "기타"]');
@@ -951,11 +962,11 @@
 
     function switchMainTab(tabName) {
       currentTab = tabName;
-      document.getElementById("tabAllBtn").className = tabName === 'all' ? 'tab-btn active' : 'tab-btn';
-      document.getElementById("tabApprovedBtn").className = tabName === 'approved' ? 'tab-btn active' : 'tab-btn';
+      document.getElementById("tabProgressBtn").className = tabName === 'progress' ? 'tab-btn active' : 'tab-btn';
+      document.getElementById("tabFinishedBtn").className = tabName === 'finished' ? 'tab-btn active' : 'tab-btn';
 
       document.getElementById("sectionHeadingTitle").textContent = 
-        tabName === 'approved' ? '🏆 결재 통과 안건 목록 (승인 / 완료)' : '의사결정 안건 목록';
+        tabName === 'finished' ? '🏆 종료된 의사결정 안건 (승인 / 부결)' : '📋 진행 중인 의사결정 안건';
 
       onFilterChange();
     }
@@ -1073,8 +1084,7 @@
       apiCall("getDashboardData", null, data => {
         document.getElementById("statTotal").textContent = data.summary.total;
         document.getElementById("statPending").textContent = data.summary.pendingApproval;
-        document.getElementById("statHold").textContent = data.summary.onHold;
-        document.getElementById("statUrgent").textContent = data.summary.urgent;
+        document.getElementById("statRejected").textContent = data.summary.rejected;
         document.getElementById("statImminent").textContent = data.summary.deadlineImminent;
 
         renderRecentLogs(data.recentLogs);
@@ -1106,7 +1116,7 @@
       if (!issues || issues.length === 0) {
         container.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted); background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--silver-border);">
-            ${currentTab === 'approved' ? '통과/결재 완료된 안건이 아직 없습니다.' : '조건에 해당하는 의사결정 안건이 없습니다.'}
+            ${currentTab === 'finished' ? '종료(승인/부결)된 안건이 아직 없습니다.' : '진행 중인 의사결정 안건이 없습니다.'}
           </div>
         `;
         return;
@@ -1116,7 +1126,7 @@
         <div class="issue-card" onclick="openDetailModal('${item.id}')">
           <div>
             <div class="issue-top">
-              <span class="badge badge-${item.status}">${item.status}</span>
+              <span class="badge badge-${item.status}">${item.status === '거절' ? '부결' : item.status}</span>
               <span class="priority-badge priority-${item.priority}">우선순위: ${item.priority}</span>
             </div>
             <div class="issue-title">${escapeHtml(item.title)}</div>
@@ -1149,7 +1159,7 @@
             <span>${l.createdAt ? l.createdAt.split('T')[0] : ''}</span>
           </div>
           <div style="font-size: 0.85rem; color: var(--silver-text);">
-            <strong style="color: var(--status-green);">${l.fromStatus} → ${l.toStatus}</strong> : ${escapeHtml(l.reason || '')}
+            <strong style="color: var(--status-green);">${l.fromStatus} → ${l.toStatus === '거절' ? '부결' : l.toStatus}</strong> : ${escapeHtml(l.reason || '')}
           </div>
         </div>
       `).join('');
@@ -1166,7 +1176,8 @@
         document.getElementById("detailTitle").textContent = issue.title;
         
         const statusBadge = document.getElementById("detailStatusBadge");
-        statusBadge.textContent = issue.status;
+        const statusDisplay = issue.status === '거절' ? '부결' : issue.status;
+        statusBadge.textContent = statusDisplay;
         statusBadge.className = `badge badge-${issue.status}`;
 
         const priorityBadge = document.getElementById("detailPriorityBadge");
@@ -1180,25 +1191,7 @@
           if (v.value === '보류') holdCount++;
         });
 
-        let docsSectionHtml = "";
-        const canGenerateDoc = ['승인', '보류', '거절'].includes(issue.status);
-        if (canGenerateDoc) {
-          docsSectionHtml = `
-            <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-              <div>
-                <strong style="color: #38bdf8; font-size: 0.88rem;">📄 Google Docs 회의록 / 결정문</strong>
-                <div style="font-size: 0.76rem; color: var(--text-muted);">${issue.status} 상태의 공식 의사결정 회의록 생성</div>
-              </div>
-              <div>
-                ${issue.docUrl ? 
-                  `<a href="${issue.docUrl}" target="_blank" class="btn btn-docs">🔗 Docs 회의록 열기 ↗</a>` : 
-                  `<button class="btn btn-docs" onclick="handleGenerateDocs('${issue.id}')">📝 회의록 자동 생성</button>`
-                }
-              </div>
-            </div>
-          `;
-        }
-
+        // Vote Call Button (For agendas in '제안' or '논의중')
         let voteCallBanner = "";
         if (['제안', '논의중'].includes(issue.status)) {
           voteCallBanner = `
@@ -1212,8 +1205,23 @@
           `;
         }
 
+        // Auto-generated Text Summary Box at bottom
+        const summaryBoxHtml = `
+          <div class="summary-box">
+            <div class="summary-box-header">
+              📝 안건 최종 요약 & 결의 내용
+            </div>
+            <div style="font-size: 0.85rem; line-height: 1.6; color: var(--silver-text);">
+              <div>• <strong>현재 안건 상태:</strong> <span class="badge badge-${issue.status}">${statusDisplay}</span> (최종결정자: ${escapeHtml(issue.decisionOwner)})</div>
+              <div>• <strong>제안 개요:</strong> ${escapeHtml(issue.summary)}</div>
+              <div>• <strong>투표 집계:</strong> 찬성 ${appCount}표 / 반대 ${rejCount}표 / 보류 ${holdCount}표 (총 ${votes.length}명 참여)</div>
+              ${issue.holdReason ? `<div style="color: #fb923c;">• <strong>보류 사유:</strong> ${escapeHtml(issue.holdReason)} (재검토: ${escapeHtml(issue.reviewDate)})</div>` : ''}
+              ${comments.length > 0 ? `<div>• <strong>최근 주요 의견:</strong> "${escapeHtml(comments[comments.length - 1].author)}: ${escapeHtml(comments[comments.length - 1].text)}"` : ''}
+            </div>
+          </div>
+        `;
+
         const bodyHtml = `
-          ${docsSectionHtml}
           ${voteCallBanner}
 
           <div class="detail-section">
@@ -1273,7 +1281,7 @@
                 <option value="논의중" ${issue.status === '논의중' ? 'selected' : ''}>논의중</option>
                 <option value="승인대기" ${issue.status === '승인대기' ? 'selected' : ''}>승인대기</option>
                 <option value="승인" ${issue.status === '승인' ? 'selected' : ''}>승인</option>
-                <option value="거절" ${issue.status === '거절' ? 'selected' : ''}>거절</option>
+                <option value="거절" ${issue.status === '거절' ? 'selected' : ''}>거절 (부결)</option>
                 <option value="보류" ${issue.status === '보류' ? 'selected' : ''}>보류</option>
                 <option value="실행중" ${issue.status === '실행중' ? 'selected' : ''}>실행중</option>
                 <option value="완료" ${issue.status === '완료' ? 'selected' : ''}>완료</option>
@@ -1284,7 +1292,7 @@
           </div>
 
           <div class="detail-section">
-            <div class="detail-section-title">🗳️ 투표 및 의견 현황</div>
+            <div class="detail-section-title">🗳️ 투표 및 현황</div>
             <div class="votes-summary">
               <div class="vote-pill" style="border-color: rgba(52, 211, 153, 0.4);">
                 <div style="font-size: 0.75rem; color: #34d399;">찬성</div>
@@ -1330,7 +1338,7 @@
           </div>
 
           <div class="detail-section">
-            <div class="detail-section-title">💬 의견 (댓글 타임라인)</div>
+            <div class="detail-section-title">💬 의견 및 토론 (댓글 타임라인)</div>
             <div class="timeline-list" style="margin-bottom: 14px;">
               ${comments.length > 0 ? comments.map(c => `
                 <div class="timeline-item">
@@ -1340,7 +1348,7 @@
                   </div>
                   <div style="font-size: 0.85rem; color: var(--silver-text); white-space: pre-line;">${escapeHtml(c.text)}</div>
                 </div>
-              `).join('') : '<div style="font-size: 0.8rem; color: var(--text-muted);">첫 의견을 작성해보세요.</div>'}
+              `).join('') : '<div style="font-size: 0.8rem; color: var(--text-muted);">첫 의견을 작성해 토론을 시작해보세요.</div>'}
             </div>
 
             <div style="display: flex; gap: 8px; align-items: flex-start;">
@@ -1350,7 +1358,9 @@
             </div>
           </div>
 
-          <div class="detail-section">
+          ${summaryBoxHtml}
+
+          <div class="detail-section" style="margin-top: 20px;">
             <div class="detail-section-title">📋 결정 변경 이력 (Audit Logs)</div>
             <div class="timeline-list">
               ${logs.map(l => `
@@ -1359,7 +1369,7 @@
                     <span>${escapeHtml(l.actor)}</span>
                     <span>${l.createdAt}</span>
                   </div>
-                  <div><strong>${l.fromStatus} → ${l.toStatus}</strong> : ${escapeHtml(l.reason || '')}</div>
+                  <div><strong>${l.fromStatus} → ${l.toStatus === '거절' ? '부결' : l.toStatus}</strong> : ${escapeHtml(l.reason || '')}</div>
                 </div>
               `).join('')}
             </div>
@@ -1497,15 +1507,6 @@
       });
     }
 
-    function handleGenerateDocs(issueId) {
-      showToast("Google Docs 회의록을 생성하는 중입니다...", "info");
-      apiCall("generateMeetingDoc", { issueId: issueId }, res => {
-        showToast("Docs 회의록이 생성되었습니다!", "success");
-        openDetailModal(issueId);
-        loadDashboardAndIssues();
-      });
-    }
-
     function handleDeleteIssue(issueId) {
       const actor = document.getElementById("statusActor").value || "관리자";
       if (confirm("정말로 이 안건을 삭제하시겠습니까? (삭제 처리 후 목록에서 숨겨집니다)")) {
@@ -1603,18 +1604,17 @@
         const issues = JSON.parse(localStorage.getItem("DECISION_ISSUES") || "[]");
         const logs = JSON.parse(localStorage.getItem("DECISION_LOGS") || "[]");
 
-        let pendingApproval = 0, onHold = 0, urgent = 0, deadlineImminent = 0;
+        let pendingApproval = 0, rejected = 0, deadlineImminent = 0;
         const activeIssues = issues.filter(i => i.deleted !== 'TRUE');
 
         activeIssues.forEach(i => {
           if (i.status === '승인대기') pendingApproval++;
-          if (i.status === '보류') onHold++;
-          if (i.priority === '상') urgent++;
+          if (i.status === '거절') rejected++;
           if (i.deadline && i.deadline.includes("7월") && i.status !== '완료') deadlineImminent++;
         });
 
         return {
-          summary: { total: activeIssues.length, pendingApproval, onHold, urgent, deadlineImminent },
+          summary: { total: activeIssues.length, pendingApproval, rejected, deadlineImminent },
           recentLogs: logs.slice().reverse().slice(0, 7)
         };
       },
@@ -1633,8 +1633,10 @@
             const matchSummary = (item.summary || '').toLowerCase().includes(q);
             if (!matchTitle && !matchProposer && !matchSummary) return false;
           }
-          if (filters.tab === 'approved') {
-            if (['승인', '실행중', '완료'].includes(item.status) === false) return false;
+          if (filters.tab === 'progress') {
+            if (['제안', '논의중', '승인대기', '보류', '실행중'].includes(item.status) === false) return false;
+          } else if (filters.tab === 'finished') {
+            if (['승인', '거절', '완료'].includes(item.status) === false) return false;
           }
           if (filters.status && filters.status !== '전체' && item.status !== filters.status) return false;
           if (filters.category && filters.category !== '전체' && item.category !== filters.category) return false;
@@ -1683,7 +1685,7 @@
         };
 
         issues.unshift(newItem);
-        logs.push({ id: 'LOG_' + Date.now(), issueId: newId, actor: data.proposer.trim(), fromStatus: '-', toStatus: '제안', reason: '최초 안건 등록', createdAt: now });
+        logs.push({ id: 'LOG_' + Date.now(), issueId: newId, actor: data.proposer.trim(), fromStatus: '-', toStatus: '제안', reason: '최초 안건 작성', createdAt: now });
 
         localStorage.setItem("DECISION_ISSUES", JSON.stringify(issues));
         localStorage.setItem("DECISION_LOGS", JSON.stringify(logs));
@@ -1763,19 +1765,6 @@
           localStorage.setItem("DECISION_LOGS", JSON.stringify(logs));
         }
         return { success: true };
-      },
-
-      generateMeetingDoc: function(payload) {
-        const issueId = payload.issueId || payload;
-        let issues = JSON.parse(localStorage.getItem("DECISION_ISSUES") || "[]");
-        const idx = issues.findIndex(i => i.id === issueId);
-        if (idx !== -1) {
-          const fakeDocUrl = "https://docs.google.com/document/d/sample_decision_" + issueId;
-          issues[idx].docUrl = fakeDocUrl;
-          localStorage.setItem("DECISION_ISSUES", JSON.stringify(issues));
-          return { success: true, docUrl: fakeDocUrl };
-        }
-        throw new Error("안건을 찾지 못했습니다.");
       }
     };
   </script>
